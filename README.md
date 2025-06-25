@@ -27,7 +27,7 @@ Weather App - это красивое и функциональное прило
 
 1. Клонируйте репозиторий:
 ```bash
-git clone https://github.com/your-username/weather-app.git
+git clone https://github.com/ShivaiGit/CF.git
 ```
 
 2. Откройте проект в Android Studio
