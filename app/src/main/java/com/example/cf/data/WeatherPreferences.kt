@@ -18,6 +18,7 @@ class WeatherPreferences(private val context: Context) {
     
     private val LAST_CITY = stringPreferencesKey("last_city")
     private val DARK_THEME = stringPreferencesKey("dark_theme")
+    private val UNIT_CELSIUS = stringPreferencesKey("unit_celsius")
 
     init {
         Log.d("WeatherPreferences", "Initializing preferences")
@@ -48,6 +49,15 @@ class WeatherPreferences(private val context: Context) {
             preferences[DARK_THEME]?.toBooleanStrictOrNull() ?: false
         }
 
+    val isCelsius: Flow<Boolean> = context.dataStore.data
+        .catch { exception ->
+            Log.e("WeatherPreferences", "Error reading preferences", exception)
+            emit(emptyPreferences())
+        }
+        .map { preferences ->
+            preferences[UNIT_CELSIUS]?.toBooleanStrictOrNull() ?: true
+        }
+
     suspend fun saveCity(city: String) {
         try {
             Log.d("WeatherPreferences", "Saving city: $city")
@@ -70,6 +80,19 @@ class WeatherPreferences(private val context: Context) {
             Log.d("WeatherPreferences", "Successfully saved dark theme: $isDark")
         } catch (e: Exception) {
             Log.e("WeatherPreferences", "Error saving dark theme: $isDark", e)
+            throw e
+        }
+    }
+
+    suspend fun saveUnit(isCelsius: Boolean) {
+        try {
+            Log.d("WeatherPreferences", "Saving unit: $isCelsius")
+            context.dataStore.edit { preferences ->
+                preferences[UNIT_CELSIUS] = isCelsius.toString()
+            }
+            Log.d("WeatherPreferences", "Successfully saved unit: $isCelsius")
+        } catch (e: Exception) {
+            Log.e("WeatherPreferences", "Error saving unit: $isCelsius", e)
             throw e
         }
     }
