@@ -214,18 +214,24 @@ fun WeatherScreen(
             exit = fadeOut() + shrinkVertically()
         ) {
             if (!dailyForecasts.isNullOrEmpty()) {
-                Spacer(modifier = Modifier.height(24.dp))
-                Text(
-                    text = "5-Day Forecast",
-                    style = MaterialTheme.typography.titleLarge,
-                    modifier = Modifier.padding(bottom = 16.dp)
-                )
-                LazyRow(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    contentPadding = PaddingValues(horizontal = 16.dp)
+                Spacer(modifier = Modifier.height(32.dp))
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalAlignment = Alignment.Start
                 ) {
-                    items(dailyForecasts) { item ->
-                        ForecastCard(item)
+                    Text(
+                        text = "5-Day Forecast",
+                        style = MaterialTheme.typography.titleLarge,
+                        modifier = Modifier
+                            .padding(start = 8.dp, bottom = 16.dp)
+                    )
+                    LazyRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        contentPadding = PaddingValues(horizontal = 16.dp)
+                    ) {
+                        items(dailyForecasts) { item ->
+                            ForecastCard(item)
+                        }
                     }
                 }
             }
@@ -260,13 +266,13 @@ fun WeatherInfoItem(
 fun ForecastCard(forecast: ForecastItem) {
     Card(
         modifier = Modifier
-            .width(120.dp)
-            .height(180.dp),
-        shape = RoundedCornerShape(12.dp)
+            .width(130.dp)
+            .height(200.dp),
+        shape = RoundedCornerShape(16.dp)
     ) {
         Column(
             modifier = Modifier
-                .padding(8.dp)
+                .padding(12.dp)
                 .fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
@@ -277,34 +283,46 @@ fun ForecastCard(forecast: ForecastItem) {
             Text(
                 text = date,
                 style = MaterialTheme.typography.bodyMedium,
-                textAlign = TextAlign.Center
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
             )
 
             Spacer(modifier = Modifier.height(8.dp))
+
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(
+                        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.85f),
+                        shape = RoundedCornerShape(8.dp)
+                    )
+                    .padding(horizontal = 4.dp, vertical = 2.dp)
+            ) {
+                Text(
+                    text = forecast.weather.firstOrNull()?.main ?: "",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    textAlign = TextAlign.Center,
+                    maxLines = 2,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
 
             forecast.weather.firstOrNull()?.let { weather ->
                 WeatherIcon(
                     iconCode = weather.icon,
-                    modifier = Modifier.size(60.dp),
+                    modifier = Modifier.size(48.dp),
                     contentDescription = weather.description
                 )
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
             Text(
                 text = "${forecast.main.temp}°C",
                 style = MaterialTheme.typography.titleMedium
-            )
-
-            Spacer(modifier = Modifier.height(4.dp))
-
-            Text(
-                text = forecast.weather.firstOrNull()?.main ?: "",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-                textAlign = TextAlign.Center,
-                maxLines = 2
             )
         }
     }
