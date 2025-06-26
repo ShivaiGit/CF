@@ -12,6 +12,11 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.cf.data.ForecastItem
 import java.text.SimpleDateFormat
 import java.util.*
+import androidx.compose.foundation.background
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.style.TextAlign
 
 @Composable
 fun WeatherScreen(
@@ -89,45 +94,68 @@ fun WeatherScreen(
 
         // Current Weather
         state.weather?.let { weather ->
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.padding(16.dp)
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                shape = RoundedCornerShape(16.dp)
             ) {
-                Text(
-                    text = weather.name,
-                    style = MaterialTheme.typography.headlineMedium
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = "${weather.main.temp}°C",
-                    style = MaterialTheme.typography.displayMedium
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = weather.weather.firstOrNull()?.description?.capitalize() ?: "",
-                    style = MaterialTheme.typography.bodyLarge
-                )
-                Spacer(modifier = Modifier.height(16.dp))
-                Row(
-                    horizontalArrangement = Arrangement.SpaceEvenly,
-                    modifier = Modifier.fillMaxWidth()
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier
+                        .padding(16.dp)
+                        .fillMaxWidth()
                 ) {
-                    Text("Humidity: ${weather.main.humidity}%")
-                    Text("Wind: ${weather.wind.speed} m/s")
+                    Text(
+                        text = weather.name,
+                        style = MaterialTheme.typography.headlineMedium
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    
+                    weather.weather.firstOrNull()?.let { weatherInfo ->
+                        WeatherIcon(
+                            iconCode = weatherInfo.icon,
+                            modifier = Modifier.size(100.dp),
+                            contentDescription = weatherInfo.description
+                        )
+                    }
+                    
+                    Text(
+                        text = "${weather.main.temp}°C",
+                        style = MaterialTheme.typography.displayMedium
+                    )
+                    Text(
+                        text = weather.weather.firstOrNull()?.description?.capitalize() ?: "",
+                        style = MaterialTheme.typography.bodyLarge
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Row(
+                        horizontalArrangement = Arrangement.SpaceEvenly,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        WeatherInfoItem(
+                            title = "Humidity",
+                            value = "${weather.main.humidity}%"
+                        )
+                        WeatherInfoItem(
+                            title = "Wind",
+                            value = "${weather.wind.speed} m/s"
+                        )
+                    }
                 }
             }
         }
 
         // 5-day Forecast
         if (!dailyForecasts.isNullOrEmpty()) {
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(24.dp))
             Text(
                 text = "5-Day Forecast",
                 style = MaterialTheme.typography.titleLarge,
                 modifier = Modifier.padding(bottom = 16.dp)
             )
             LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
                 contentPadding = PaddingValues(horizontal = 16.dp)
             ) {
                 items(dailyForecasts) { item ->
@@ -139,9 +167,33 @@ fun WeatherScreen(
 }
 
 @Composable
+fun WeatherInfoItem(
+    title: String,
+    value: String,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = modifier.padding(8.dp)
+    ) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+        )
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(
+            text = value,
+            style = MaterialTheme.typography.titleMedium
+        )
+    }
+}
+
+@Composable
 fun ForecastCard(forecast: ForecastItem) {
     Card(
-        modifier = Modifier.width(120.dp)
+        modifier = Modifier.width(110.dp),
+        shape = RoundedCornerShape(12.dp)
     ) {
         Column(
             modifier = Modifier
@@ -150,25 +202,34 @@ fun ForecastCard(forecast: ForecastItem) {
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             // Format date
-            val date = SimpleDateFormat("EEE", Locale.getDefault())
-                .format(Date(forecast.dt * 1000))
+            val dateFormatter = SimpleDateFormat("EEE, MMM d", Locale.getDefault())
+            val date = dateFormatter.format(Date(forecast.dt * 1000))
+            
             Text(
                 text = date,
-                style = MaterialTheme.typography.titleMedium
+                style = MaterialTheme.typography.bodyMedium,
+                textAlign = TextAlign.Center
             )
-            Spacer(modifier = Modifier.height(8.dp))
+            
+            Spacer(modifier = Modifier.height(4.dp))
+            
+            forecast.weather.firstOrNull()?.let { weather ->
+                WeatherIcon(
+                    iconCode = weather.icon,
+                    modifier = Modifier.size(50.dp),
+                    contentDescription = weather.description
+                )
+            }
+            
             Text(
                 text = "${forecast.main.temp}°C",
-                style = MaterialTheme.typography.titleLarge
+                style = MaterialTheme.typography.titleMedium
             )
-            Spacer(modifier = Modifier.height(4.dp))
+            
             Text(
                 text = forecast.weather.firstOrNull()?.main ?: "",
-                style = MaterialTheme.typography.bodyMedium
-            )
-            Text(
-                text = "${forecast.wind.speed} m/s",
-                style = MaterialTheme.typography.bodySmall
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
             )
         }
     }
