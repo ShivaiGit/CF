@@ -46,6 +46,10 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import com.example.cf.R
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.rememberSnackbarHostState
+import kotlinx.coroutines.launch
 
 @Composable
 fun LoadingAnimation(
@@ -88,6 +92,8 @@ fun WeatherScreen(
     val historyCities by viewModel.historyCities.collectAsStateWithLifecycle()
     val configuration = LocalConfiguration.current
     val screenHeight = configuration.screenHeightDp.dp
+    val snackbarHostState = rememberSnackbarHostState()
+    val coroutineScope = rememberCoroutineScope()
 
     // Получаем список уникальных дней для прогноза
     val dailyForecasts = remember(state.forecast) {
@@ -114,6 +120,15 @@ fun WeatherScreen(
         }?.take(5) // Берем только 5 дней
     }
 
+    // Показываем Snackbar при ошибке
+    LaunchedEffect(state.error) {
+        state.error?.let { errorMsg ->
+            coroutineScope.launch {
+                snackbarHostState.showSnackbar(errorMsg)
+            }
+        }
+    }
+
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -121,6 +136,7 @@ fun WeatherScreen(
             .padding(horizontal = 8.dp, vertical = 4.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
+        SnackbarHost(hostState = snackbarHostState)
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -197,19 +213,6 @@ fun WeatherScreen(
             LoadingAnimation(
                 modifier = Modifier.padding(4.dp)
             )
-        }
-        AnimatedVisibility(
-            visible = state.error != null,
-            enter = fadeIn() + expandVertically(),
-            exit = fadeOut() + shrinkVertically()
-        ) {
-            state.error?.let { error ->
-                Text(
-                    text = error,
-                    color = MaterialTheme.colorScheme.error,
-                    modifier = Modifier.padding(vertical = 4.dp)
-                )
-            }
         }
         AnimatedVisibility(
             visible = state.weather != null,
