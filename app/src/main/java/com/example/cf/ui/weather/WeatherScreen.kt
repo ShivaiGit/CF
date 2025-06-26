@@ -28,6 +28,7 @@ import android.util.Log
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.MyLocation
 import androidx.compose.material3.ExperimentalMaterial3Api
 
 @Composable
@@ -107,15 +108,31 @@ fun WeatherScreen(
             }
         )
         Spacer(modifier = Modifier.height(4.dp))
-        OutlinedTextField(
-            value = state.city,
-            onValueChange = viewModel::onCityChange,
-            label = { Text("Enter city name") },
-            singleLine = true,
-            modifier = Modifier
-                .fillMaxWidth()
-                .animateContentSize()
-        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            OutlinedTextField(
+                value = state.city,
+                onValueChange = viewModel::onCityChange,
+                label = { Text("Enter city name") },
+                singleLine = true,
+                modifier = Modifier
+                    .weight(1f)
+                    .animateContentSize()
+            )
+            Spacer(modifier = Modifier.width(4.dp))
+            IconButton(
+                onClick = { viewModel.onMyLocationClick() },
+                enabled = !state.isLoading,
+                modifier = Modifier.size(48.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.MyLocation,
+                    contentDescription = "Моё местоположение"
+                )
+            }
+        }
         Spacer(modifier = Modifier.height(4.dp))
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -134,14 +151,6 @@ fun WeatherScreen(
                     modifier = Modifier.size(36.dp)
                 )
             }
-        }
-        Spacer(modifier = Modifier.height(4.dp))
-        Button(
-            onClick = { viewModel.onMyLocationClick() },
-            modifier = Modifier.fillMaxWidth(),
-            enabled = !state.isLoading
-        ) {
-            Text("Моё местоположение")
         }
         Spacer(modifier = Modifier.height(4.dp))
         Button(
