@@ -101,7 +101,29 @@ fun WeatherScreen(
                 .animateContentSize()
         )
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // Переключатель темы сразу под полем ввода
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.End
+        ) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(
+                    text = "Dark theme",
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.padding(bottom = 2.dp)
+                )
+                Switch(
+                    checked = state.isDarkTheme,
+                    onCheckedChange = { viewModel.toggleTheme() },
+                    modifier = Modifier.size(36.dp)
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
 
         Button(
             onClick = viewModel::fetchWeather,
@@ -237,18 +259,6 @@ fun WeatherScreen(
                 }
             }
         }
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.End
-        ) {
-            Text("Dark theme")
-            Switch(
-                checked = state.isDarkTheme,
-                onCheckedChange = { viewModel.toggleTheme() }
-            )
-        }
-        Spacer(modifier = Modifier.height(8.dp))
     }
 }
 
