@@ -1,3 +1,33 @@
 <resources>
-    <string name="app_name">°C°F</string>
+    <string name="app_name">°C°Ф</string>
+    <string name="settings">Настройки</string>
+    <string name="city">Город</string>
+    <string name="search">Поиск</string>
+    <string name="my_location">Моё местоположение</string>
+    <string name="clear_history">Очистить историю</string>
+    <string name="outdated_data">Данные устаревшие (нет интернета)</string>
+    <string name="last_update">Последнее обновление: %1$s</string>
+    <string name="feels_like">Ощущается как: %1$s°%2$s</string>
+    <string name="min_max">Мин: %1$s°%3$s  Макс: %2$s°%3$s</string>
+    <string name="sunrise">Восход: %1$s</string>
+    <string name="sunset">Закат: %1$s</string>
+    <string name="wind_speed">%1$s м/с</string>
+    <string name="pressure">%1$s hPa</string>
+    <string name="humidity">%1$s%%</string>
+    <string name="cloudiness">%1$s%%</string>
+    <string name="visibility">%1$.1f км</string>
+    <string name="share_weather">Поделиться погодой</string>
+    <string name="forecast_title">5-дневный прогноз</string>
+    <string name="unit_celsius">°C</string>
+    <string name="unit_fahrenheit">°F</string>
+    <string name="units">Единицы измерения:</string>
+    <string name="back">Назад</string>
+    <string name="error_no_internet">Нет подключения к интернету. Проверьте сеть.</string>
+    <string name="error_city_not_found">Город не найден. Проверьте название.</string>
+    <string name="error_auth">Ошибка авторизации. Проверьте API ключ.</string>
+    <string name="error_server">Ошибка сервера: %1$d</string>
+    <string name="error_unknown">Неизвестная ошибка. Попробуйте позже.</string>
+    <string name="loading">Загрузка...</string>
+    <string name="history">История</string>
+    <string name="placeholder_city">Город</string>
 </resources>
