@@ -95,10 +95,10 @@ fun WeatherScreen(
         modifier = modifier
             .fillMaxSize()
             .statusBarsPadding()
-            .padding(16.dp),
+            .padding(horizontal = 8.dp, vertical = 4.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        TopAppBar(
+        SmallTopAppBar(
             title = { Text("Погода") },
             actions = {
                 IconButton(onClick = onSettingsClick) {
@@ -106,9 +106,7 @@ fun WeatherScreen(
                 }
             }
         )
-        Spacer(modifier = Modifier.height(8.dp))
-
-        // Поле для ввода города и кнопка поиска всегда отображаются
+        Spacer(modifier = Modifier.height(4.dp))
         OutlinedTextField(
             value = state.city,
             onValueChange = viewModel::onCityChange,
@@ -118,10 +116,7 @@ fun WeatherScreen(
                 .fillMaxWidth()
                 .animateContentSize()
         )
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        // Переключатель темы сразу под полем ввода
+        Spacer(modifier = Modifier.height(4.dp))
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
@@ -140,9 +135,7 @@ fun WeatherScreen(
                 )
             }
         }
-
-        Spacer(modifier = Modifier.height(8.dp))
-
+        Spacer(modifier = Modifier.height(4.dp))
         Button(
             onClick = { viewModel.onMyLocationClick() },
             modifier = Modifier.fillMaxWidth(),
@@ -150,9 +143,7 @@ fun WeatherScreen(
         ) {
             Text("Моё местоположение")
         }
-
-        Spacer(modifier = Modifier.height(8.dp))
-
+        Spacer(modifier = Modifier.height(4.dp))
         Button(
             onClick = viewModel::fetchWeather,
             modifier = Modifier.fillMaxWidth(),
@@ -169,10 +160,16 @@ fun WeatherScreen(
                 Text(if (isLoading) "Searching..." else "Search")
             }
         }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // Сообщение об ошибке всегда отображается, если оно есть
+        Spacer(modifier = Modifier.height(8.dp))
+        AnimatedVisibility(
+            visible = state.isLoading,
+            enter = fadeIn() + expandVertically(),
+            exit = fadeOut() + shrinkVertically()
+        ) {
+            LoadingAnimation(
+                modifier = Modifier.padding(8.dp)
+            )
+        }
         AnimatedVisibility(
             visible = state.error != null,
             enter = fadeIn() + expandVertically(),
@@ -182,23 +179,10 @@ fun WeatherScreen(
                 Text(
                     text = error,
                     color = MaterialTheme.colorScheme.error,
-                    modifier = Modifier.padding(vertical = 16.dp)
+                    modifier = Modifier.padding(vertical = 8.dp)
                 )
             }
         }
-
-        // Loading indicator with animation
-        AnimatedVisibility(
-            visible = state.isLoading,
-            enter = fadeIn() + expandVertically(),
-            exit = fadeOut() + shrinkVertically()
-        ) {
-            LoadingAnimation(
-                modifier = Modifier.padding(16.dp)
-            )
-        }
-
-        // Current Weather with animation
         AnimatedVisibility(
             visible = state.weather != null,
             enter = fadeIn() + expandVertically(),
@@ -208,29 +192,27 @@ fun WeatherScreen(
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(16.dp),
+                        .padding(8.dp),
                     shape = RoundedCornerShape(16.dp)
                 ) {
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         modifier = Modifier
-                            .padding(16.dp)
+                            .padding(12.dp)
                             .fillMaxWidth()
                     ) {
                         Text(
                             text = weather.name,
                             style = MaterialTheme.typography.headlineMedium
                         )
-                        Spacer(modifier = Modifier.height(16.dp))
-                        
+                        Spacer(modifier = Modifier.height(8.dp))
                         weather.weather.firstOrNull()?.let { weatherInfo ->
                             WeatherIcon(
                                 iconCode = weatherInfo.icon,
-                                modifier = Modifier.size(100.dp),
+                                modifier = Modifier.size(80.dp),
                                 contentDescription = weatherInfo.description
                             )
                         }
-                        
                         Text(
                             text = "${weather.main.temp}°$unit",
                             style = MaterialTheme.typography.displayMedium
@@ -239,7 +221,7 @@ fun WeatherScreen(
                             text = weather.weather.firstOrNull()?.description?.capitalize() ?: "",
                             style = MaterialTheme.typography.bodyLarge
                         )
-                        Spacer(modifier = Modifier.height(16.dp))
+                        Spacer(modifier = Modifier.height(8.dp))
                         Row(
                             horizontalArrangement = Arrangement.SpaceEvenly,
                             modifier = Modifier.fillMaxWidth()
@@ -257,15 +239,13 @@ fun WeatherScreen(
                 }
             }
         }
-
-        // 5-day Forecast with animation
         AnimatedVisibility(
             visible = !dailyForecasts.isNullOrEmpty(),
             enter = fadeIn() + expandVertically(),
             exit = fadeOut() + shrinkVertically()
         ) {
             if (!dailyForecasts.isNullOrEmpty()) {
-                Spacer(modifier = Modifier.height(32.dp))
+                Spacer(modifier = Modifier.height(8.dp))
                 Column(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalAlignment = Alignment.Start
@@ -274,14 +254,21 @@ fun WeatherScreen(
                         text = "5-Day Forecast",
                         style = MaterialTheme.typography.titleLarge,
                         modifier = Modifier
-                            .padding(start = 8.dp, bottom = 16.dp)
+                            .padding(start = 8.dp, bottom = 8.dp)
                     )
-                    LazyRow(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        contentPadding = PaddingValues(horizontal = 16.dp)
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(270.dp)
                     ) {
-                        items(dailyForecasts) { item ->
-                            ForecastCard(item, unit)
+                        LazyRow(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            contentPadding = PaddingValues(horizontal = 16.dp),
+                            modifier = Modifier.fillMaxHeight()
+                        ) {
+                            items(dailyForecasts) { item ->
+                                ForecastCard(item, unit)
+                            }
                         }
                     }
                 }
@@ -317,28 +304,27 @@ fun WeatherInfoItem(
 fun ForecastCard(forecast: ForecastItem, unit: String) {
     Card(
         modifier = Modifier
-            .width(130.dp)
-            .height(200.dp),
+            .width(150.dp)
+            .height(260.dp),
         shape = RoundedCornerShape(16.dp)
     ) {
         Column(
             modifier = Modifier
-                .padding(12.dp)
+                .padding(8.dp)
                 .fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Format date
             val dateFormatter = SimpleDateFormat("EEE, MMM d", Locale.getDefault())
             val date = dateFormatter.format(Date(forecast.dt * 1000))
 
             Text(
                 text = date,
-                style = MaterialTheme.typography.bodyMedium,
+                style = MaterialTheme.typography.bodySmall,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.fillMaxWidth()
             )
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(2.dp))
 
             Box(
                 modifier = Modifier
@@ -359,21 +345,22 @@ fun ForecastCard(forecast: ForecastItem, unit: String) {
                 )
             }
 
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(2.dp))
 
             forecast.weather.firstOrNull()?.let { weather ->
                 WeatherIcon(
                     iconCode = weather.icon,
-                    modifier = Modifier.size(48.dp),
+                    modifier = Modifier.size(40.dp),
                     contentDescription = weather.description
                 )
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(4.dp))
 
             Text(
                 text = "${forecast.main.temp}°$unit",
-                style = MaterialTheme.typography.titleMedium
+                style = MaterialTheme.typography.headlineSmall.copy(color = MaterialTheme.colorScheme.primary),
+                modifier = Modifier.padding(top = 2.dp)
             )
         }
     }
