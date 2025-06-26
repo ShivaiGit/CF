@@ -28,6 +28,7 @@ import android.util.Log
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.ExperimentalMaterial3Api
 
 @Composable
 fun LoadingAnimation(
@@ -53,6 +54,7 @@ fun LoadingAnimation(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WeatherScreen(
     viewModel: WeatherViewModel,
@@ -62,6 +64,7 @@ fun WeatherScreen(
     Log.d("WeatherScreen", "Composing WeatherScreen, city: ${viewModel.state.value.city}, error: ${viewModel.state.value.error}")
     val state by viewModel.state.collectAsStateWithLifecycle()
     val density = LocalDensity.current
+    val unit = if (state.isCelsius) "C" else "F"
 
     // Получаем список уникальных дней для прогноза
     val dailyForecasts = remember(state.forecast) {
@@ -229,7 +232,7 @@ fun WeatherScreen(
                         }
                         
                         Text(
-                            text = "${weather.main.temp}°C",
+                            text = "${weather.main.temp}°$unit",
                             style = MaterialTheme.typography.displayMedium
                         )
                         Text(
@@ -278,7 +281,7 @@ fun WeatherScreen(
                         contentPadding = PaddingValues(horizontal = 16.dp)
                     ) {
                         items(dailyForecasts) { item ->
-                            ForecastCard(item)
+                            ForecastCard(item, unit)
                         }
                     }
                 }
@@ -311,7 +314,7 @@ fun WeatherInfoItem(
 }
 
 @Composable
-fun ForecastCard(forecast: ForecastItem) {
+fun ForecastCard(forecast: ForecastItem, unit: String) {
     Card(
         modifier = Modifier
             .width(130.dp)
@@ -369,7 +372,7 @@ fun ForecastCard(forecast: ForecastItem) {
             Spacer(modifier = Modifier.height(16.dp))
 
             Text(
-                text = "${forecast.main.temp}°C",
+                text = "${forecast.main.temp}°$unit",
                 style = MaterialTheme.typography.titleMedium
             )
         }
