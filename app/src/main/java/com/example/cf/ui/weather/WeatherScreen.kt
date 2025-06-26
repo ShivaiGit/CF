@@ -66,6 +66,7 @@ fun WeatherScreen(
     val state by viewModel.state.collectAsStateWithLifecycle()
     val density = LocalDensity.current
     val unit = if (state.isCelsius) "C" else "F"
+    val isCacheShown by viewModel.isCacheShown.collectAsStateWithLifecycle()
 
     // Получаем список уникальных дней для прогноза
     val dailyForecasts = remember(state.forecast) {
@@ -197,52 +198,64 @@ fun WeatherScreen(
             enter = fadeIn() + expandVertically(),
             exit = fadeOut() + shrinkVertically()
         ) {
-            state.weather?.let { weather ->
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(8.dp),
-                    shape = RoundedCornerShape(16.dp)
-                ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
+            Column(modifier = Modifier.fillMaxWidth()) {
+                if (isCacheShown) {
+                    Text(
+                        text = "Данные устаревшие (нет интернета)",
+                        color = Color.Gray,
+                        style = MaterialTheme.typography.bodySmall,
                         modifier = Modifier
-                            .padding(12.dp)
+                            .padding(bottom = 4.dp)
+                            .align(Alignment.CenterHorizontally)
+                    )
+                }
+                state.weather?.let { weather ->
+                    Card(
+                        modifier = Modifier
                             .fillMaxWidth()
+                            .padding(8.dp),
+                        shape = RoundedCornerShape(16.dp)
                     ) {
-                        Text(
-                            text = weather.name,
-                            style = MaterialTheme.typography.headlineMedium
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        weather.weather.firstOrNull()?.let { weatherInfo ->
-                            WeatherIcon(
-                                iconCode = weatherInfo.icon,
-                                modifier = Modifier.size(80.dp),
-                                contentDescription = weatherInfo.description
-                            )
-                        }
-                        Text(
-                            text = "${weather.main.temp}°$unit",
-                            style = MaterialTheme.typography.displayMedium
-                        )
-                        Text(
-                            text = weather.weather.firstOrNull()?.description?.capitalize() ?: "",
-                            style = MaterialTheme.typography.bodyLarge
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Row(
-                            horizontalArrangement = Arrangement.SpaceEvenly,
-                            modifier = Modifier.fillMaxWidth()
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            modifier = Modifier
+                                .padding(12.dp)
+                                .fillMaxWidth()
                         ) {
-                            WeatherInfoItem(
-                                title = "Humidity",
-                                value = "${weather.main.humidity}%"
+                            Text(
+                                text = weather.name,
+                                style = MaterialTheme.typography.headlineMedium
                             )
-                            WeatherInfoItem(
-                                title = "Wind",
-                                value = "${weather.wind.speed} m/s"
+                            Spacer(modifier = Modifier.height(8.dp))
+                            weather.weather.firstOrNull()?.let { weatherInfo ->
+                                WeatherIcon(
+                                    iconCode = weatherInfo.icon,
+                                    modifier = Modifier.size(80.dp),
+                                    contentDescription = weatherInfo.description
+                                )
+                            }
+                            Text(
+                                text = "${weather.main.temp}°$unit",
+                                style = MaterialTheme.typography.displayMedium
                             )
+                            Text(
+                                text = weather.weather.firstOrNull()?.description?.capitalize() ?: "",
+                                style = MaterialTheme.typography.bodyLarge
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Row(
+                                horizontalArrangement = Arrangement.SpaceEvenly,
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                WeatherInfoItem(
+                                    title = "Humidity",
+                                    value = "${weather.main.humidity}%"
+                                )
+                                WeatherInfoItem(
+                                    title = "Wind",
+                                    value = "${weather.wind.speed} m/s"
+                                )
+                            }
                         }
                     }
                 }
