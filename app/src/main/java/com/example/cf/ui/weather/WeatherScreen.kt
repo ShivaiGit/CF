@@ -29,6 +29,7 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
@@ -143,15 +144,28 @@ fun WeatherScreen(
             Spacer(modifier = Modifier.height(2.dp))
             Row(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .horizontalScroll(rememberScrollState()),
+                    .fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                historyCities.forEach { city ->
-                    AssistChip(
-                        onClick = { viewModel.selectCityFromHistory(city) },
-                        label = { Text(city) },
-                        modifier = Modifier.padding(end = 4.dp)
+                Row(
+                    modifier = Modifier.weight(1f).horizontalScroll(rememberScrollState()),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    historyCities.forEach { city ->
+                        AssistChip(
+                            onClick = { viewModel.selectCityFromHistory(city) },
+                            label = { Text(city) },
+                            modifier = Modifier.padding(end = 4.dp)
+                        )
+                    }
+                }
+                IconButton(
+                    onClick = { viewModel.clearHistory() },
+                    modifier = Modifier.size(32.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Delete,
+                        contentDescription = "Очистить историю"
                     )
                 }
             }

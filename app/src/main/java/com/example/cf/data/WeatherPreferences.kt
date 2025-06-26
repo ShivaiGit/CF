@@ -200,4 +200,8 @@ class WeatherPreferences(private val context: Context) {
         val trimmed = current.take(5)
         saveHistoryCities(trimmed)
     }
+
+    suspend fun clearHistoryCities() {
+        saveHistoryCities(emptyList())
+    }
 } 

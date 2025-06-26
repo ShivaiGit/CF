@@ -275,4 +275,10 @@ class WeatherViewModel(
         _state.update { it.copy(city = city, error = null) }
         fetchWeather()
     }
+
+    fun clearHistory() {
+        viewModelScope.launch {
+            preferences.clearHistoryCities()
+        }
+    }
 } 
