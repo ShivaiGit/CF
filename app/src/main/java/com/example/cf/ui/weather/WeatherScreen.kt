@@ -24,6 +24,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.platform.LocalDensity
+import android.util.Log
 
 @Composable
 fun LoadingAnimation(
@@ -54,6 +55,7 @@ fun WeatherScreen(
     viewModel: WeatherViewModel,
     modifier: Modifier = Modifier
 ) {
+    Log.d("WeatherScreen", "Composing WeatherScreen, city: ${viewModel.state.value.city}, error: ${viewModel.state.value.error}")
     val state by viewModel.state.collectAsStateWithLifecycle()
     val density = LocalDensity.current
 
@@ -88,7 +90,7 @@ fun WeatherScreen(
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Search field with animation
+        // Поле для ввода города и кнопка поиска всегда отображаются
         OutlinedTextField(
             value = state.city,
             onValueChange = viewModel::onCityChange,
@@ -101,7 +103,6 @@ fun WeatherScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Search button
         Button(
             onClick = viewModel::fetchWeather,
             modifier = Modifier.fillMaxWidth(),
@@ -119,20 +120,9 @@ fun WeatherScreen(
             }
         }
 
-        Spacer(modifier = Modifier.height(32.dp))
+        Spacer(modifier = Modifier.height(16.dp))
 
-        // Loading indicator with animation
-        AnimatedVisibility(
-            visible = state.isLoading,
-            enter = fadeIn() + expandVertically(),
-            exit = fadeOut() + shrinkVertically()
-        ) {
-            LoadingAnimation(
-                modifier = Modifier.padding(16.dp)
-            )
-        }
-
-        // Error message with animation
+        // Сообщение об ошибке всегда отображается, если оно есть
         AnimatedVisibility(
             visible = state.error != null,
             enter = fadeIn() + expandVertically(),
@@ -145,6 +135,17 @@ fun WeatherScreen(
                     modifier = Modifier.padding(vertical = 16.dp)
                 )
             }
+        }
+
+        // Loading indicator with animation
+        AnimatedVisibility(
+            visible = state.isLoading,
+            enter = fadeIn() + expandVertically(),
+            exit = fadeOut() + shrinkVertically()
+        ) {
+            LoadingAnimation(
+                modifier = Modifier.padding(16.dp)
+            )
         }
 
         // Current Weather with animation

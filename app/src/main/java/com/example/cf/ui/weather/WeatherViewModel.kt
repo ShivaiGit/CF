@@ -1,5 +1,6 @@
 package com.example.cf.ui.weather
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.cf.data.WeatherRepository
@@ -19,45 +20,83 @@ class WeatherViewModel(
     val state: StateFlow<WeatherState> = _state.asStateFlow()
 
     init {
-        // Загружаем последний сохраненный город при старте
+        Log.d("WeatherViewModel", "Initializing ViewModel")
+        loadSavedCity()
+    }
+
+    private fun loadSavedCity() {
         viewModelScope.launch {
-            preferences.lastCity.collect { lastCity ->
+            try {
+                val lastCity = preferences.lastCity.first()
+                Log.d("WeatherViewModel", "Loaded city: $lastCity")
                 if (lastCity.isNotBlank()) {
                     _state.update { it.copy(city = lastCity) }
-                    fetchWeather()
+                    fetchWeather(isAutoLoad = true)
                 }
+            } catch (e: Exception) {
+                Log.e("WeatherViewModel", "Error loading saved city", e)
+                clearSavedCity()
             }
         }
     }
 
     fun onCityChange(newCity: String) {
-        _state.update { it.copy(city = newCity) }
+        _state.update { it.copy(city = newCity, error = null) }
     }
 
-    fun fetchWeather() {
-        if (_state.value.city.isBlank()) return
+    private fun clearSavedCity() {
+        viewModelScope.launch {
+            try {
+                Log.d("WeatherViewModel", "Clearing saved city")
+                preferences.saveCity("")
+                _state.update { it.copy(city = "", weather = null, forecast = null) }
+            } catch (e: Exception) {
+                Log.e("WeatherViewModel", "Error clearing saved city", e)
+            }
+        }
+    }
+
+    fun fetchWeather(isAutoLoad: Boolean = false) {
+        val cityToFetch = _state.value.city
+        if (cityToFetch.isBlank()) {
+            Log.d("WeatherViewModel", "Attempted to fetch weather with blank city")
+            return
+        }
 
         viewModelScope.launch {
-            _state.update { it.copy(isLoading = true, error = null) }
             try {
-                // Сохраняем город
-                preferences.saveCity(_state.value.city)
+                Log.d("WeatherViewModel", "Starting weather fetch for city: $cityToFetch")
+                _state.update { it.copy(isLoading = true, error = null) }
 
                 // Параллельно загружаем текущую погоду и прогноз
-                val currentDeferred = async { repository.getCurrentWeather(_state.value.city) }
-                val forecastDeferred = async { repository.getForecast(_state.value.city) }
+                val currentDeferred = async { repository.getCurrentWeather(cityToFetch) }
+                val forecastDeferred = async { repository.getForecast(cityToFetch) }
 
                 val current = currentDeferred.await()
                 val forecast = forecastDeferred.await()
+
+                Log.d("WeatherViewModel", "Successfully fetched weather for: $cityToFetch")
+                
+                // Сохраняем город ТОЛЬКО после успешного получения данных
+                preferences.saveCity(cityToFetch)
 
                 _state.update { 
                     it.copy(
                         isLoading = false,
                         weather = current,
-                        forecast = forecast
+                        forecast = forecast,
+                        error = null
                     )
                 }
             } catch (e: Exception) {
+                Log.e("WeatherViewModel", "Error fetching weather for $cityToFetch", e)
+                
+                // Если это автозагрузка и возникла ошибка - очищаем сохранённый город
+                if (isAutoLoad) {
+                    Log.d("WeatherViewModel", "Auto-load failed, clearing saved city")
+                    clearSavedCity()
+                }
+
                 _state.update { 
                     it.copy(
                         isLoading = false,
@@ -69,7 +108,7 @@ class WeatherViewModel(
     }
 
     private fun errorMessage(e: Exception): String {
-        return when (e) {
+        val message = when (e) {
             is IOException -> "Нет подключения к интернету. Проверьте сеть."
             is HttpException -> when (e.code()) {
                 404 -> "Город не найден. Проверьте название."
@@ -78,5 +117,7 @@ class WeatherViewModel(
             }
             else -> e.message ?: "Неизвестная ошибка. Попробуйте позже."
         }
+        Log.d("WeatherViewModel", "Error message: $message")
+        return message
     }
 } 
