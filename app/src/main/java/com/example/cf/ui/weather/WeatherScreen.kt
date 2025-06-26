@@ -17,6 +17,37 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.animation.*
+import androidx.compose.animation.core.*
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.platform.LocalDensity
+
+@Composable
+fun LoadingAnimation(
+    modifier: Modifier = Modifier
+) {
+    val transition = rememberInfiniteTransition(label = "loading")
+    val scale by transition.animateFloat(
+        initialValue = 0.6f,
+        targetValue = 1.0f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(800),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "scale"
+    )
+
+    Box(modifier = modifier) {
+        CircularProgressIndicator(
+            modifier = Modifier
+                .size(48.dp * scale)
+                .align(Alignment.Center)
+        )
+    }
+}
 
 @Composable
 fun WeatherScreen(
@@ -24,6 +55,7 @@ fun WeatherScreen(
     modifier: Modifier = Modifier
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val density = LocalDensity.current
 
     // Получаем список уникальных дней для прогноза
     val dailyForecasts = remember(state.forecast) {
@@ -56,13 +88,15 @@ fun WeatherScreen(
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Search field
+        // Search field with animation
         OutlinedTextField(
             value = state.city,
             onValueChange = viewModel::onCityChange,
             label = { Text("Enter city name") },
             singleLine = true,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier
+                .fillMaxWidth()
+                .animateContentSize()
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -73,93 +107,126 @@ fun WeatherScreen(
             modifier = Modifier.fillMaxWidth(),
             enabled = !state.isLoading && state.city.isNotBlank()
         ) {
-            Text("Search")
+            AnimatedContent(
+                targetState = state.isLoading,
+                transitionSpec = {
+                    fadeIn() + slideInVertically { -it } togetherWith
+                    fadeOut() + slideOutVertically { it }
+                },
+                label = "loading"
+            ) { isLoading ->
+                Text(if (isLoading) "Searching..." else "Search")
+            }
         }
 
         Spacer(modifier = Modifier.height(32.dp))
 
-        // Loading indicator
-        if (state.isLoading) {
-            CircularProgressIndicator()
-        }
-
-        // Error message
-        state.error?.let { error ->
-            Text(
-                text = error,
-                color = MaterialTheme.colorScheme.error,
-                modifier = Modifier.padding(vertical = 16.dp)
+        // Loading indicator with animation
+        AnimatedVisibility(
+            visible = state.isLoading,
+            enter = fadeIn() + expandVertically(),
+            exit = fadeOut() + shrinkVertically()
+        ) {
+            LoadingAnimation(
+                modifier = Modifier.padding(16.dp)
             )
         }
 
-        // Current Weather
-        state.weather?.let { weather ->
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                shape = RoundedCornerShape(16.dp)
-            ) {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
+        // Error message with animation
+        AnimatedVisibility(
+            visible = state.error != null,
+            enter = fadeIn() + expandVertically(),
+            exit = fadeOut() + shrinkVertically()
+        ) {
+            state.error?.let { error ->
+                Text(
+                    text = error,
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.padding(vertical = 16.dp)
+                )
+            }
+        }
+
+        // Current Weather with animation
+        AnimatedVisibility(
+            visible = state.weather != null,
+            enter = fadeIn() + expandVertically(),
+            exit = fadeOut() + shrinkVertically()
+        ) {
+            state.weather?.let { weather ->
+                Card(
                     modifier = Modifier
-                        .padding(16.dp)
                         .fillMaxWidth()
+                        .padding(16.dp),
+                    shape = RoundedCornerShape(16.dp)
                 ) {
-                    Text(
-                        text = weather.name,
-                        style = MaterialTheme.typography.headlineMedium
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
-                    
-                    weather.weather.firstOrNull()?.let { weatherInfo ->
-                        WeatherIcon(
-                            iconCode = weatherInfo.icon,
-                            modifier = Modifier.size(100.dp),
-                            contentDescription = weatherInfo.description
-                        )
-                    }
-                    
-                    Text(
-                        text = "${weather.main.temp}°C",
-                        style = MaterialTheme.typography.displayMedium
-                    )
-                    Text(
-                        text = weather.weather.firstOrNull()?.description?.capitalize() ?: "",
-                        style = MaterialTheme.typography.bodyLarge
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Row(
-                        horizontalArrangement = Arrangement.SpaceEvenly,
-                        modifier = Modifier.fillMaxWidth()
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier
+                            .padding(16.dp)
+                            .fillMaxWidth()
                     ) {
-                        WeatherInfoItem(
-                            title = "Humidity",
-                            value = "${weather.main.humidity}%"
+                        Text(
+                            text = weather.name,
+                            style = MaterialTheme.typography.headlineMedium
                         )
-                        WeatherInfoItem(
-                            title = "Wind",
-                            value = "${weather.wind.speed} m/s"
+                        Spacer(modifier = Modifier.height(16.dp))
+                        
+                        weather.weather.firstOrNull()?.let { weatherInfo ->
+                            WeatherIcon(
+                                iconCode = weatherInfo.icon,
+                                modifier = Modifier.size(100.dp),
+                                contentDescription = weatherInfo.description
+                            )
+                        }
+                        
+                        Text(
+                            text = "${weather.main.temp}°C",
+                            style = MaterialTheme.typography.displayMedium
                         )
+                        Text(
+                            text = weather.weather.firstOrNull()?.description?.capitalize() ?: "",
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Row(
+                            horizontalArrangement = Arrangement.SpaceEvenly,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            WeatherInfoItem(
+                                title = "Humidity",
+                                value = "${weather.main.humidity}%"
+                            )
+                            WeatherInfoItem(
+                                title = "Wind",
+                                value = "${weather.wind.speed} m/s"
+                            )
+                        }
                     }
                 }
             }
         }
 
-        // 5-day Forecast
-        if (!dailyForecasts.isNullOrEmpty()) {
-            Spacer(modifier = Modifier.height(24.dp))
-            Text(
-                text = "5-Day Forecast",
-                style = MaterialTheme.typography.titleLarge,
-                modifier = Modifier.padding(bottom = 16.dp)
-            )
-            LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                contentPadding = PaddingValues(horizontal = 16.dp)
-            ) {
-                items(dailyForecasts) { item ->
-                    ForecastCard(item)
+        // 5-day Forecast with animation
+        AnimatedVisibility(
+            visible = !dailyForecasts.isNullOrEmpty(),
+            enter = fadeIn() + expandVertically(),
+            exit = fadeOut() + shrinkVertically()
+        ) {
+            if (!dailyForecasts.isNullOrEmpty()) {
+                Spacer(modifier = Modifier.height(24.dp))
+                Text(
+                    text = "5-Day Forecast",
+                    style = MaterialTheme.typography.titleLarge,
+                    modifier = Modifier.padding(bottom = 16.dp)
+                )
+                LazyRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    contentPadding = PaddingValues(horizontal = 16.dp)
+                ) {
+                    items(dailyForecasts) { item ->
+                        ForecastCard(item)
+                    }
                 }
             }
         }
