@@ -21,6 +21,7 @@ class WeatherViewModel(
 
     init {
         Log.d("WeatherViewModel", "Initializing ViewModel")
+        loadTheme()
         loadSavedCity()
     }
 
@@ -119,5 +120,28 @@ class WeatherViewModel(
         }
         Log.d("WeatherViewModel", "Error message: $message")
         return message
+    }
+
+    fun toggleTheme() {
+        val newTheme = !_state.value.isDarkTheme
+        _state.update { it.copy(isDarkTheme = newTheme) }
+        viewModelScope.launch {
+            try {
+                preferences.saveDarkTheme(newTheme)
+            } catch (e: Exception) {
+                Log.e("WeatherViewModel", "Error saving theme", e)
+            }
+        }
+    }
+
+    private fun loadTheme() {
+        viewModelScope.launch {
+            try {
+                val isDark = preferences.isDarkTheme.first()
+                _state.update { it.copy(isDarkTheme = isDark) }
+            } catch (e: Exception) {
+                Log.e("WeatherViewModel", "Error loading theme", e)
+            }
+        }
     }
 } 

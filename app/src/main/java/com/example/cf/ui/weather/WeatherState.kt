@@ -8,5 +8,6 @@ data class WeatherState(
     val error: String? = null,
     val weather: WeatherResponse? = null,
     val forecast: ForecastResponse? = null,
-    val city: String = ""
+    val city: String = "",
+    val isDarkTheme: Boolean = false
 ) 

@@ -237,6 +237,18 @@ fun WeatherScreen(
                 }
             }
         }
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.End
+        ) {
+            Text("Dark theme")
+            Switch(
+                checked = state.isDarkTheme,
+                onCheckedChange = { viewModel.toggleTheme() }
+            )
+        }
+        Spacer(modifier = Modifier.height(8.dp))
     }
 }
 

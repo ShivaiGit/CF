@@ -1,12 +1,15 @@
 package com.example.cf.data
 
 import android.content.Context
+import android.util.Log
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
 
 private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "weather_preferences")
@@ -14,15 +17,60 @@ private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(na
 class WeatherPreferences(private val context: Context) {
     
     private val LAST_CITY = stringPreferencesKey("last_city")
+    private val DARK_THEME = stringPreferencesKey("dark_theme")
+
+    init {
+        Log.d("WeatherPreferences", "Initializing preferences")
+    }
 
     val lastCity: Flow<String> = context.dataStore.data
+        .catch { exception ->
+            Log.e("WeatherPreferences", "Error reading preferences", exception)
+            emit(emptyPreferences())
+        }
         .map { preferences ->
-            preferences[LAST_CITY] ?: ""
+            try {
+                val city = preferences[LAST_CITY] ?: ""
+                Log.d("WeatherPreferences", "Read last city: $city")
+                city
+            } catch (e: Exception) {
+                Log.e("WeatherPreferences", "Error mapping preferences", e)
+                ""
+            }
+        }
+
+    val isDarkTheme: Flow<Boolean> = context.dataStore.data
+        .catch { exception ->
+            Log.e("WeatherPreferences", "Error reading preferences", exception)
+            emit(emptyPreferences())
+        }
+        .map { preferences ->
+            preferences[DARK_THEME]?.toBooleanStrictOrNull() ?: false
         }
 
     suspend fun saveCity(city: String) {
-        context.dataStore.edit { preferences ->
-            preferences[LAST_CITY] = city
+        try {
+            Log.d("WeatherPreferences", "Saving city: $city")
+            context.dataStore.edit { preferences ->
+                preferences[LAST_CITY] = city
+            }
+            Log.d("WeatherPreferences", "Successfully saved city: $city")
+        } catch (e: Exception) {
+            Log.e("WeatherPreferences", "Error saving city: $city", e)
+            throw e
+        }
+    }
+
+    suspend fun saveDarkTheme(isDark: Boolean) {
+        try {
+            Log.d("WeatherPreferences", "Saving dark theme: $isDark")
+            context.dataStore.edit { preferences ->
+                preferences[DARK_THEME] = isDark.toString()
+            }
+            Log.d("WeatherPreferences", "Successfully saved dark theme: $isDark")
+        } catch (e: Exception) {
+            Log.e("WeatherPreferences", "Error saving dark theme: $isDark", e)
+            throw e
         }
     }
 } 
