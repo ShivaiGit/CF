@@ -45,6 +45,7 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
+import com.example.cf.R
 
 @Composable
 fun LoadingAnimation(
@@ -112,6 +113,9 @@ fun WeatherScreen(
             } ?: items.first()
         }?.take(5) // Берем только 5 дней
     }
+
+    val unitStr = if (state.isCelsius) stringResource(R.string.unit_celsius) else stringResource(R.string.unit_fahrenheit)
+    val shareLabel = stringResource(R.string.share_weather)
 
     Column(
         modifier = modifier
@@ -246,7 +250,6 @@ fun WeatherScreen(
                                 val desc = weather.weather.firstOrNull()?.description?.capitalize() ?: ""
                                 val temp = weather.main.temp
                                 val city = weather.name
-                                val unitStr = if (state.isCelsius) stringResource(R.string.unit_celsius) else stringResource(R.string.unit_fahrenheit)
                                 val shareText = city + ": " + temp + unitStr + ", " + desc
                                 onShareWeather(shareText)
                             },
@@ -254,7 +257,7 @@ fun WeatherScreen(
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Share,
-                                contentDescription = stringResource(R.string.share_weather)
+                                contentDescription = shareLabel
                             )
                         }
                     }
