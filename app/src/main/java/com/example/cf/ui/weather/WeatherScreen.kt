@@ -35,6 +35,7 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.AssistChip
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.Star
 
 @Composable
 fun LoadingAnimation(
@@ -320,6 +321,20 @@ fun WeatherScreen(
                                     title = "Wind",
                                     value = "${weather.wind.speed} m/s"
                                 )
+                                WeatherInfoItem(
+                                    title = "Pressure",
+                                    value = "${weather.main.pressure} hPa"
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Row(
+                                horizontalArrangement = Arrangement.SpaceEvenly,
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                val sunrise = java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault()).format(java.util.Date(weather.sys.sunrise * 1000))
+                                val sunset = java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault()).format(java.util.Date(weather.sys.sunset * 1000))
+                                Text("Восход: $sunrise", style = MaterialTheme.typography.bodySmall)
+                                Text("Закат: $sunset", style = MaterialTheme.typography.bodySmall)
                             }
                         }
                     }
