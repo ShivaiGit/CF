@@ -310,6 +310,11 @@ fun WeatherScreen(
                                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
                             )
                             Text(
+                                text = "Мин: ${weather.main.temp_min}°$unit  Макс: ${weather.main.temp_max}°$unit",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                            )
+                            Text(
                                 text = weather.weather.firstOrNull()?.description?.capitalize() ?: "",
                                 style = MaterialTheme.typography.bodyLarge
                             )
