@@ -98,7 +98,7 @@ fun WeatherScreen(
             .padding(horizontal = 8.dp, vertical = 4.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        SmallTopAppBar(
+        TopAppBar(
             title = { Text("Погода") },
             actions = {
                 IconButton(onClick = onSettingsClick) {
