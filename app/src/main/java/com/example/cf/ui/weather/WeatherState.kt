@@ -9,5 +9,6 @@ data class WeatherState(
     val weather: WeatherResponse? = null,
     val forecast: ForecastResponse? = null,
     val city: String = "",
-    val isDarkTheme: Boolean = false
+    val isDarkTheme: Boolean = false,
+    val isCelsius: Boolean = true
 ) 

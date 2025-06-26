@@ -12,6 +12,10 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import retrofit2.HttpException
 import java.io.IOException
+import com.google.gson.Gson
+import com.google.gson.JsonSyntaxException
+import com.example.cf.data.WeatherResponse
+import com.example.cf.data.ForecastResponse
 
 sealed class LocationEvent {
     object RequestLocation : LocationEvent()
@@ -24,11 +28,15 @@ class WeatherViewModel(
     private val preferences: WeatherPreferences
 ) : ViewModel() {
 
+    private val gson = Gson()
     private val _state = MutableStateFlow(WeatherState())
     val state: StateFlow<WeatherState> = _state.asStateFlow()
 
     private val _locationEvents = Channel<LocationEvent>(Channel.BUFFERED)
     val locationEvents: ReceiveChannel<LocationEvent> = _locationEvents
+
+    private val _isCacheShown = MutableStateFlow(false)
+    val isCacheShown: StateFlow<Boolean> = _isCacheShown.asStateFlow()
 
     init {
         Log.d("WeatherViewModel", "Initializing ViewModel")
@@ -93,6 +101,14 @@ class WeatherViewModel(
                 // Сохраняем город ТОЛЬКО после успешного получения данных
                 preferences.saveCity(cityToFetch)
 
+                // --- Кэшируем ---
+                try {
+                    preferences.saveCachedWeather(gson.toJson(current))
+                    preferences.saveCachedForecast(gson.toJson(forecast))
+                } catch (e: Exception) {
+                    Log.e("WeatherViewModel", "Error caching weather/forecast", e)
+                }
+
                 _state.update { 
                     it.copy(
                         isLoading = false,
@@ -101,20 +117,44 @@ class WeatherViewModel(
                         error = null
                     )
                 }
+                _isCacheShown.value = false
             } catch (e: Exception) {
                 Log.e("WeatherViewModel", "Error fetching weather for $cityToFetch", e)
-                
                 // Если это автозагрузка и возникла ошибка - очищаем сохранённый город
                 if (isAutoLoad) {
                     Log.d("WeatherViewModel", "Auto-load failed, clearing saved city")
                     clearSavedCity()
                 }
-
-                _state.update { 
-                    it.copy(
-                        isLoading = false,
-                        error = errorMessage(e)
-                    )
+                // --- Пробуем загрузить кэш ---
+                var cacheUsed = false
+                try {
+                    val cachedWeatherJson = preferences.cachedWeather.first()
+                    val cachedForecastJson = preferences.cachedForecast.first()
+                    if (!cachedWeatherJson.isNullOrBlank() && !cachedForecastJson.isNullOrBlank()) {
+                        val cachedWeather = gson.fromJson(cachedWeatherJson, WeatherResponse::class.java)
+                        val cachedForecast = gson.fromJson(cachedForecastJson, ForecastResponse::class.java)
+                        _state.update {
+                            it.copy(
+                                isLoading = false,
+                                weather = cachedWeather,
+                                forecast = cachedForecast,
+                                error = errorMessage(e)
+                            )
+                        }
+                        _isCacheShown.value = true
+                        cacheUsed = true
+                    }
+                } catch (ex: Exception) {
+                    Log.e("WeatherViewModel", "Error loading cache", ex)
+                }
+                if (!cacheUsed) {
+                    _state.update { 
+                        it.copy(
+                            isLoading = false,
+                            error = errorMessage(e)
+                        )
+                    }
+                    _isCacheShown.value = false
                 }
             }
         }
