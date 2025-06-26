@@ -41,6 +41,9 @@ import androidx.compose.material.icons.filled.Air
 import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material.icons.filled.Cloud
 import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalConfiguration
 
 @Composable
 fun LoadingAnimation(
@@ -81,6 +84,8 @@ fun WeatherScreen(
     val isCacheShown by viewModel.isCacheShown.collectAsStateWithLifecycle()
     val cacheTimestamp by viewModel.cacheTimestamp.collectAsStateWithLifecycle()
     val historyCities by viewModel.historyCities.collectAsStateWithLifecycle()
+    val configuration = LocalConfiguration.current
+    val screenHeight = configuration.screenHeightDp.dp
 
     // Получаем список уникальных дней для прогноза
     val dailyForecasts = remember(state.forecast) {
@@ -114,62 +119,65 @@ fun WeatherScreen(
             .padding(horizontal = 8.dp, vertical = 4.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        TopAppBar(
-            title = { Text("Погода") },
-            actions = {
-                IconButton(onClick = onSettingsClick) {
-                    Icon(Icons.Default.Settings, contentDescription = "Настройки")
-                }
-            }
-        )
-        Spacer(modifier = Modifier.height(4.dp))
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 8.dp, vertical = 4.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             OutlinedTextField(
                 value = state.city,
                 onValueChange = viewModel::onCityChange,
-                label = { Text("Enter city name") },
+                label = { Text("") },
+                placeholder = { Text("Город") },
                 singleLine = true,
-                modifier = Modifier
-                    .weight(1f)
-                    .animateContentSize()
+                modifier = Modifier.weight(1f)
             )
-            Spacer(modifier = Modifier.width(4.dp))
             IconButton(
                 onClick = { viewModel.onMyLocationClick() },
                 enabled = !state.isLoading,
-                modifier = Modifier.size(48.dp)
+                modifier = Modifier.size(32.dp)
             ) {
                 Icon(
                     imageVector = Icons.Default.LocationOn,
                     contentDescription = "Моё местоположение"
                 )
             }
+            IconButton(
+                onClick = viewModel::fetchWeather,
+                enabled = !state.isLoading && state.city.isNotBlank(),
+                modifier = Modifier.size(32.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Search,
+                    contentDescription = "Поиск"
+                )
+            }
+            IconButton(
+                onClick = onSettingsClick,
+                modifier = Modifier.size(32.dp)
+            ) {
+                Icon(Icons.Default.Settings, contentDescription = "Настройки")
+            }
         }
         if (historyCities.isNotEmpty()) {
-            Spacer(modifier = Modifier.height(2.dp))
             Row(
                 modifier = Modifier
-                    .fillMaxWidth(),
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState())
+                    .padding(horizontal = 8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(
-                    modifier = Modifier.weight(1f).horizontalScroll(rememberScrollState()),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    historyCities.forEach { city ->
-                        AssistChip(
-                            onClick = { viewModel.selectCityFromHistory(city) },
-                            label = { Text(city) },
-                            modifier = Modifier.padding(end = 4.dp)
-                        )
-                    }
+                historyCities.forEach { city ->
+                    AssistChip(
+                        onClick = { viewModel.selectCityFromHistory(city) },
+                        label = { Text(city) },
+                        modifier = Modifier.padding(end = 2.dp)
+                    )
                 }
                 IconButton(
                     onClick = { viewModel.clearHistory() },
-                    modifier = Modifier.size(32.dp)
+                    modifier = Modifier.size(24.dp)
                 ) {
                     Icon(
                         imageVector = Icons.Default.Delete,
@@ -178,50 +186,14 @@ fun WeatherScreen(
                 }
             }
         }
-        Spacer(modifier = Modifier.height(4.dp))
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.End
-        ) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(
-                    text = "Dark theme",
-                    style = MaterialTheme.typography.bodySmall,
-                    modifier = Modifier.padding(bottom = 2.dp)
-                )
-                Switch(
-                    checked = state.isDarkTheme,
-                    onCheckedChange = { viewModel.toggleTheme() },
-                    modifier = Modifier.size(36.dp)
-                )
-            }
-        }
-        Spacer(modifier = Modifier.height(4.dp))
-        Button(
-            onClick = viewModel::fetchWeather,
-            modifier = Modifier.fillMaxWidth(),
-            enabled = !state.isLoading && state.city.isNotBlank()
-        ) {
-            AnimatedContent(
-                targetState = state.isLoading,
-                transitionSpec = {
-                    fadeIn() + slideInVertically { -it } togetherWith
-                    fadeOut() + slideOutVertically { it }
-                },
-                label = "loading"
-            ) { isLoading ->
-                Text(if (isLoading) "Searching..." else "Search")
-            }
-        }
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(2.dp))
         AnimatedVisibility(
             visible = state.isLoading,
             enter = fadeIn() + expandVertically(),
             exit = fadeOut() + shrinkVertically()
         ) {
             LoadingAnimation(
-                modifier = Modifier.padding(8.dp)
+                modifier = Modifier.padding(4.dp)
             )
         }
         AnimatedVisibility(
@@ -233,7 +205,7 @@ fun WeatherScreen(
                 Text(
                     text = error,
                     color = MaterialTheme.colorScheme.error,
-                    modifier = Modifier.padding(vertical = 8.dp)
+                    modifier = Modifier.padding(vertical = 4.dp)
                 )
             }
         }
@@ -242,7 +214,11 @@ fun WeatherScreen(
             enter = fadeIn() + expandVertically(),
             exit = fadeOut() + shrinkVertically()
         ) {
-            Column(modifier = Modifier.fillMaxWidth()) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = 320.dp, max = screenHeight * 0.55f)
+            ) {
                 if (isCacheShown) {
                     val formattedTime = cacheTimestamp?.let {
                         val sdf = SimpleDateFormat("dd.MM.yyyy HH:mm", Locale.getDefault())
@@ -284,30 +260,31 @@ fun WeatherScreen(
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(8.dp),
+                            .padding(8.dp)
+                            .weight(1f, fill = true),
                         shape = RoundedCornerShape(16.dp)
                     ) {
                         Column(
                             horizontalAlignment = Alignment.CenterHorizontally,
                             modifier = Modifier
-                                .padding(12.dp)
-                                .fillMaxWidth()
+                                .padding(16.dp)
+                                .fillMaxSize()
                         ) {
                             Text(
                                 text = weather.name,
                                 style = MaterialTheme.typography.headlineMedium
                             )
-                            Spacer(modifier = Modifier.height(8.dp))
+                            Spacer(modifier = Modifier.height(12.dp))
                             weather.weather.firstOrNull()?.let { weatherInfo ->
                                 WeatherIcon(
                                     iconCode = weatherInfo.icon,
-                                    modifier = Modifier.size(80.dp),
+                                    modifier = Modifier.size(120.dp),
                                     contentDescription = weatherInfo.description
                                 )
                             }
                             Text(
                                 text = "${weather.main.temp}°$unit",
-                                style = MaterialTheme.typography.displayMedium
+                                style = MaterialTheme.typography.displayLarge
                             )
                             Text(
                                 text = "Ощущается как: ${weather.main.feels_like}°$unit",
@@ -370,25 +347,26 @@ fun WeatherScreen(
             exit = fadeOut() + shrinkVertically()
         ) {
             if (!dailyForecasts.isNullOrEmpty()) {
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(4.dp))
                 Column(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f, fill = true),
                     horizontalAlignment = Alignment.Start
                 ) {
                     Text(
                         text = "5-Day Forecast",
-                        style = MaterialTheme.typography.titleLarge,
-                        modifier = Modifier
-                            .padding(start = 8.dp, bottom = 8.dp)
+                        style = MaterialTheme.typography.titleMedium,
+                        modifier = Modifier.padding(start = 8.dp, bottom = 4.dp)
                     )
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(270.dp)
+                            .fillMaxHeight()
                     ) {
                         LazyRow(
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            contentPadding = PaddingValues(horizontal = 16.dp),
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            contentPadding = PaddingValues(horizontal = 8.dp),
                             modifier = Modifier.fillMaxHeight()
                         ) {
                             items(dailyForecasts) { item ->
@@ -429,13 +407,13 @@ fun WeatherInfoItem(
 fun ForecastCard(forecast: ForecastItem, unit: String) {
     Card(
         modifier = Modifier
-            .width(150.dp)
-            .height(260.dp),
+            .width(180.dp)
+            .height(220.dp),
         shape = RoundedCornerShape(16.dp)
     ) {
         Column(
             modifier = Modifier
-                .padding(8.dp)
+                .padding(6.dp)
                 .fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
@@ -449,7 +427,7 @@ fun ForecastCard(forecast: ForecastItem, unit: String) {
                 modifier = Modifier.fillMaxWidth()
             )
 
-            Spacer(modifier = Modifier.height(2.dp))
+            Spacer(modifier = Modifier.height(1.dp))
 
             Box(
                 modifier = Modifier
@@ -458,7 +436,7 @@ fun ForecastCard(forecast: ForecastItem, unit: String) {
                         color = MaterialTheme.colorScheme.surface.copy(alpha = 0.85f),
                         shape = RoundedCornerShape(8.dp)
                     )
-                    .padding(horizontal = 4.dp, vertical = 2.dp)
+                    .padding(horizontal = 2.dp, vertical = 1.dp)
             ) {
                 Text(
                     text = forecast.weather.firstOrNull()?.main ?: "",
@@ -475,16 +453,16 @@ fun ForecastCard(forecast: ForecastItem, unit: String) {
             forecast.weather.firstOrNull()?.let { weather ->
                 WeatherIcon(
                     iconCode = weather.icon,
-                    modifier = Modifier.size(40.dp),
+                    modifier = Modifier.size(56.dp),
                     contentDescription = weather.description
                 )
             }
 
-            Spacer(modifier = Modifier.height(4.dp))
+            Spacer(modifier = Modifier.height(2.dp))
 
             Text(
                 text = "${forecast.main.temp}°$unit",
-                style = MaterialTheme.typography.headlineSmall.copy(color = MaterialTheme.colorScheme.primary),
+                style = MaterialTheme.typography.titleLarge.copy(color = MaterialTheme.colorScheme.primary),
                 modifier = Modifier.padding(top = 2.dp)
             )
         }
