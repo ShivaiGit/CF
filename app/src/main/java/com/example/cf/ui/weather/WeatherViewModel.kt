@@ -70,6 +70,7 @@ class WeatherViewModel(
 
     fun fetchWeather(isAutoLoad: Boolean = false) {
         val cityToFetch = _state.value.city
+        val units = if (_state.value.isCelsius) "metric" else "imperial"
         if (cityToFetch.isBlank()) {
             Log.d("WeatherViewModel", "Attempted to fetch weather with blank city")
             return
@@ -81,8 +82,8 @@ class WeatherViewModel(
                 _state.update { it.copy(isLoading = true, error = null) }
 
                 // Параллельно загружаем текущую погоду и прогноз
-                val currentDeferred = async { repository.getCurrentWeather(cityToFetch) }
-                val forecastDeferred = async { repository.getForecast(cityToFetch) }
+                val currentDeferred = async { repository.getCurrentWeather(cityToFetch, units) }
+                val forecastDeferred = async { repository.getForecast(cityToFetch, units) }
 
                 val current = currentDeferred.await()
                 val forecast = forecastDeferred.await()
@@ -164,11 +165,12 @@ class WeatherViewModel(
     }
 
     fun onLocationReceived(lat: Double, lon: Double) {
+        val units = if (_state.value.isCelsius) "metric" else "imperial"
         viewModelScope.launch {
             try {
                 _state.update { it.copy(isLoading = true, error = null) }
-                val currentDeferred = async { repository.getCurrentWeatherByCoords(lat, lon) }
-                val forecastDeferred = async { repository.getForecastByCoords(lat, lon) }
+                val currentDeferred = async { repository.getCurrentWeatherByCoords(lat, lon, units) }
+                val forecastDeferred = async { repository.getForecastByCoords(lat, lon, units) }
                 val current = currentDeferred.await()
                 val forecast = forecastDeferred.await()
                 _state.update {
@@ -196,6 +198,19 @@ class WeatherViewModel(
     fun onLocationError(message: String) {
         viewModelScope.launch {
             _state.update { it.copy(error = message, isLoading = false) }
+        }
+    }
+
+    fun onUnitChange(isCelsius: Boolean) {
+        _state.update { it.copy(isCelsius = isCelsius) }
+        viewModelScope.launch {
+            try {
+                preferences.saveUnit(isCelsius)
+                // Перезапрашиваем погоду с новыми units
+                fetchWeather()
+            } catch (e: Exception) {
+                Log.e("WeatherViewModel", "Error saving unit", e)
+            }
         }
     }
 } 
