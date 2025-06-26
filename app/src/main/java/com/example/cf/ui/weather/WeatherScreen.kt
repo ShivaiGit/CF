@@ -34,6 +34,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.AssistChip
+import androidx.compose.material.icons.filled.Share
 
 @Composable
 fun LoadingAnimation(
@@ -64,7 +65,8 @@ fun LoadingAnimation(
 fun WeatherScreen(
     viewModel: WeatherViewModel,
     modifier: Modifier = Modifier,
-    onSettingsClick: () -> Unit = {}
+    onSettingsClick: () -> Unit = {},
+    onShareWeather: (String) -> Unit = {}
 ) {
     Log.d("WeatherScreen", "Composing WeatherScreen, city: ${viewModel.state.value.city}, error: ${viewModel.state.value.error}")
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -251,6 +253,28 @@ fun WeatherScreen(
                     )
                 }
                 state.weather?.let { weather ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Spacer(modifier = Modifier.weight(1f))
+                        IconButton(
+                            onClick = {
+                                val desc = weather.weather.firstOrNull()?.description?.capitalize() ?: ""
+                                val temp = weather.main.temp
+                                val city = weather.name
+                                val unitStr = if (state.isCelsius) "°C" else "°F"
+                                val shareText = "Погода в $city: $temp$unitStr, $desc"
+                                onShareWeather(shareText)
+                            },
+                            modifier = Modifier.size(32.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Share,
+                                contentDescription = "Поделиться погодой"
+                            )
+                        }
+                    }
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
