@@ -25,6 +25,9 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.platform.LocalDensity
 import android.util.Log
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Settings
 
 @Composable
 fun LoadingAnimation(
@@ -53,7 +56,8 @@ fun LoadingAnimation(
 @Composable
 fun WeatherScreen(
     viewModel: WeatherViewModel,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onSettingsClick: () -> Unit = {}
 ) {
     Log.d("WeatherScreen", "Composing WeatherScreen, city: ${viewModel.state.value.city}, error: ${viewModel.state.value.error}")
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -87,9 +91,20 @@ fun WeatherScreen(
     Column(
         modifier = modifier
             .fillMaxSize()
+            .statusBarsPadding()
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
+        TopAppBar(
+            title = { Text("Погода") },
+            actions = {
+                IconButton(onClick = onSettingsClick) {
+                    Icon(Icons.Default.Settings, contentDescription = "Настройки")
+                }
+            }
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+
         // Поле для ввода города и кнопка поиска всегда отображаются
         OutlinedTextField(
             value = state.city,
@@ -121,6 +136,16 @@ fun WeatherScreen(
                     modifier = Modifier.size(36.dp)
                 )
             }
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Button(
+            onClick = { viewModel.onMyLocationClick() },
+            modifier = Modifier.fillMaxWidth(),
+            enabled = !state.isLoading
+        ) {
+            Text("Моё местоположение")
         }
 
         Spacer(modifier = Modifier.height(8.dp))

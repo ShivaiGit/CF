@@ -23,8 +23,12 @@ import androidx.core.app.ActivityCompat
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
 import com.example.cf.ui.weather.LocationEvent
+import com.example.cf.ui.weather.SettingsScreen
+import androidx.compose.runtime.mutableStateOf
 
 class MainActivity : ComponentActivity() {
+    private var showSettingsScreen = mutableStateOf(false)
+
     override fun onCreate(savedInstanceState: Bundle?) {
         Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
             Log.e("GlobalException", "Uncaught exception in thread ${thread.name}", throwable)
@@ -57,7 +61,18 @@ class MainActivity : ComponentActivity() {
                         modifier = Modifier.fillMaxSize(),
                         color = MaterialTheme.colorScheme.background
                     ) {
-                        WeatherScreen(viewModel = viewModel)
+                        if (showSettingsScreen.value) {
+                            SettingsScreen(
+                                isCelsius = state.isCelsius,
+                                onUnitChange = { viewModel.onUnitChange(it) },
+                                onBack = { showSettingsScreen.value = false }
+                            )
+                        } else {
+                            WeatherScreen(
+                                viewModel = viewModel,
+                                onSettingsClick = { showSettingsScreen.value = true }
+                            )
+                        }
                     }
                 }
             }
