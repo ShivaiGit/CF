@@ -305,6 +305,11 @@ fun WeatherScreen(
                                 style = MaterialTheme.typography.displayMedium
                             )
                             Text(
+                                text = "Ощущается как: ${weather.main.feels_like}°$unit",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                            )
+                            Text(
                                 text = weather.weather.firstOrNull()?.description?.capitalize() ?: "",
                                 style = MaterialTheme.typography.bodyLarge
                             )

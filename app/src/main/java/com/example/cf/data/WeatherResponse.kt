@@ -4,6 +4,7 @@ data class WeatherResponse(
     val weather: List<Weather>,
     val main: Main,
     val wind: Wind,
+    val sys: Sys,
     val name: String
 )
 
@@ -15,9 +16,16 @@ data class Weather(
 
 data class Main(
     val temp: Double,
-    val humidity: Int
+    val feels_like: Double,
+    val humidity: Int,
+    val pressure: Int
 )
 
 data class Wind(
     val speed: Double
+)
+
+data class Sys(
+    val sunrise: Long,
+    val sunset: Long
 ) 
