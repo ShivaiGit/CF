@@ -41,10 +41,18 @@ class WeatherViewModel(
     private val _cacheTimestamp = MutableStateFlow<Long?>(null)
     val cacheTimestamp: StateFlow<Long?> = _cacheTimestamp.asStateFlow()
 
+    private val _historyCities = MutableStateFlow<List<String>>(emptyList())
+    val historyCities: StateFlow<List<String>> = _historyCities.asStateFlow()
+
     init {
         Log.d("WeatherViewModel", "Initializing ViewModel")
         loadTheme()
         loadSavedCity()
+        viewModelScope.launch {
+            preferences.historyCities.collect {
+                _historyCities.value = it
+            }
+        }
     }
 
     private fun loadSavedCity() {
@@ -103,6 +111,8 @@ class WeatherViewModel(
                 
                 // Сохраняем город ТОЛЬКО после успешного получения данных
                 preferences.saveCity(cityToFetch)
+                // Добавляем в историю
+                preferences.addCityToHistory(cityToFetch)
 
                 // --- Кэшируем ---
                 try {
@@ -259,5 +269,10 @@ class WeatherViewModel(
                 Log.e("WeatherViewModel", "Error saving unit", e)
             }
         }
+    }
+
+    fun selectCityFromHistory(city: String) {
+        _state.update { it.copy(city = city, error = null) }
+        fetchWeather()
     }
 } 

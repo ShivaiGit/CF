@@ -11,6 +11,7 @@ import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
+import com.google.gson.Gson
 
 private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "weather_preferences")
 
@@ -22,6 +23,8 @@ class WeatherPreferences(private val context: Context) {
     private val CACHE_WEATHER = stringPreferencesKey("cache_weather")
     private val CACHE_FORECAST = stringPreferencesKey("cache_forecast")
     private val CACHE_TIMESTAMP = stringPreferencesKey("cache_timestamp")
+    private val HISTORY_CITIES = stringPreferencesKey("history_cities")
+    private val gson = Gson()
 
     init {
         Log.d("WeatherPreferences", "Initializing preferences")
@@ -160,5 +163,40 @@ class WeatherPreferences(private val context: Context) {
             Log.e("WeatherPreferences", "Error saving unit: $isCelsius", e)
             throw e
         }
+    }
+
+    val historyCities: Flow<List<String>> = context.dataStore.data
+        .catch { exception ->
+            Log.e("WeatherPreferences", "Error reading history cities", exception)
+            emit(emptyPreferences())
+        }
+        .map { preferences ->
+            preferences[HISTORY_CITIES]?.let {
+                try {
+                    gson.fromJson(it, Array<String>::class.java).toList()
+                } catch (e: Exception) {
+                    Log.e("WeatherPreferences", "Error parsing history cities", e)
+                    emptyList()
+                }
+            } ?: emptyList()
+        }
+
+    suspend fun saveHistoryCities(cities: List<String>) {
+        try {
+            val json = gson.toJson(cities)
+            context.dataStore.edit { preferences ->
+                preferences[HISTORY_CITIES] = json
+            }
+        } catch (e: Exception) {
+            Log.e("WeatherPreferences", "Error saving history cities", e)
+        }
+    }
+
+    suspend fun addCityToHistory(city: String) {
+        val current = historyCities.first().toMutableList()
+        current.remove(city)
+        current.add(0, city)
+        val trimmed = current.take(5)
+        saveHistoryCities(trimmed)
     }
 } 

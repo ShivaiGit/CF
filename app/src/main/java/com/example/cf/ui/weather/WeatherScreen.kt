@@ -30,6 +30,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.material3.AssistChip
 
 @Composable
 fun LoadingAnimation(
@@ -68,6 +71,7 @@ fun WeatherScreen(
     val unit = if (state.isCelsius) "C" else "F"
     val isCacheShown by viewModel.isCacheShown.collectAsStateWithLifecycle()
     val cacheTimestamp by viewModel.cacheTimestamp.collectAsStateWithLifecycle()
+    val historyCities by viewModel.historyCities.collectAsStateWithLifecycle()
 
     // Получаем список уникальных дней для прогноза
     val dailyForecasts = remember(state.forecast) {
@@ -133,6 +137,23 @@ fun WeatherScreen(
                     imageVector = Icons.Default.LocationOn,
                     contentDescription = "Моё местоположение"
                 )
+            }
+        }
+        if (historyCities.isNotEmpty()) {
+            Spacer(modifier = Modifier.height(2.dp))
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState()),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                historyCities.forEach { city ->
+                    AssistChip(
+                        onClick = { viewModel.selectCityFromHistory(city) },
+                        label = { Text(city) },
+                        modifier = Modifier.padding(end = 4.dp)
+                    )
+                }
             }
         }
         Spacer(modifier = Modifier.height(4.dp))
