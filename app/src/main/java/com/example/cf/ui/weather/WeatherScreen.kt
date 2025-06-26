@@ -28,7 +28,7 @@ import android.util.Log
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.MyLocation
+import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material3.ExperimentalMaterial3Api
 
 @Composable
@@ -128,7 +128,7 @@ fun WeatherScreen(
                 modifier = Modifier.size(48.dp)
             ) {
                 Icon(
-                    imageVector = Icons.Default.MyLocation,
+                    imageVector = Icons.Default.LocationOn,
                     contentDescription = "Моё местоположение"
                 )
             }
