@@ -259,7 +259,9 @@ fun WeatherInfoItem(
 @Composable
 fun ForecastCard(forecast: ForecastItem) {
     Card(
-        modifier = Modifier.width(110.dp),
+        modifier = Modifier
+            .width(120.dp)
+            .height(180.dp),
         shape = RoundedCornerShape(12.dp)
     ) {
         Column(
@@ -271,32 +273,38 @@ fun ForecastCard(forecast: ForecastItem) {
             // Format date
             val dateFormatter = SimpleDateFormat("EEE, MMM d", Locale.getDefault())
             val date = dateFormatter.format(Date(forecast.dt * 1000))
-            
+
             Text(
                 text = date,
                 style = MaterialTheme.typography.bodyMedium,
                 textAlign = TextAlign.Center
             )
-            
-            Spacer(modifier = Modifier.height(4.dp))
-            
+
+            Spacer(modifier = Modifier.height(8.dp))
+
             forecast.weather.firstOrNull()?.let { weather ->
                 WeatherIcon(
                     iconCode = weather.icon,
-                    modifier = Modifier.size(50.dp),
+                    modifier = Modifier.size(60.dp),
                     contentDescription = weather.description
                 )
             }
-            
+
+            Spacer(modifier = Modifier.height(8.dp))
+
             Text(
                 text = "${forecast.main.temp}°C",
                 style = MaterialTheme.typography.titleMedium
             )
-            
+
+            Spacer(modifier = Modifier.height(4.dp))
+
             Text(
                 text = forecast.weather.firstOrNull()?.main ?: "",
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                textAlign = TextAlign.Center,
+                maxLines = 2
             )
         }
     }
