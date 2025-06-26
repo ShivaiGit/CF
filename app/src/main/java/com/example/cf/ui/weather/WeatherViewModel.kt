@@ -7,6 +7,8 @@ import com.example.cf.data.WeatherPreferences
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import retrofit2.HttpException
+import java.io.IOException
 
 class WeatherViewModel(
     private val repository: WeatherRepository,
@@ -59,10 +61,22 @@ class WeatherViewModel(
                 _state.update { 
                     it.copy(
                         isLoading = false,
-                        error = e.message ?: "Unknown error occurred"
+                        error = errorMessage(e)
                     )
                 }
             }
+        }
+    }
+
+    private fun errorMessage(e: Exception): String {
+        return when (e) {
+            is IOException -> "Нет подключения к интернету. Проверьте сеть."
+            is HttpException -> when (e.code()) {
+                404 -> "Город не найден. Проверьте название."
+                401 -> "Ошибка авторизации. Проверьте API ключ."
+                else -> "Ошибка сервера: ${e.code()}"
+            }
+            else -> e.message ?: "Неизвестная ошибка. Попробуйте позже."
         }
     }
 } 
