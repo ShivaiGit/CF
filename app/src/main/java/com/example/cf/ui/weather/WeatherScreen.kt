@@ -20,6 +20,31 @@ fun WeatherScreen(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
 
+    // Получаем список уникальных дней для прогноза
+    val dailyForecasts = remember(state.forecast) {
+        state.forecast?.list?.groupBy { item ->
+            // Конвертируем timestamp в начало дня (00:00)
+            val date = Date(item.dt * 1000)
+            val calendar = Calendar.getInstance().apply {
+                time = date
+                set(Calendar.HOUR_OF_DAY, 0)
+                set(Calendar.MINUTE, 0)
+                set(Calendar.SECOND, 0)
+                set(Calendar.MILLISECOND, 0)
+            }
+            calendar.time
+        }?.map { (_, items) ->
+            // Берем прогноз на середину дня (около 12:00)
+            items.minByOrNull { item ->
+                val calendar = Calendar.getInstance().apply {
+                    time = Date(item.dt * 1000)
+                }
+                val hour = calendar.get(Calendar.HOUR_OF_DAY)
+                Math.abs(hour - 12) // Находим время, ближайшее к полудню
+            } ?: items.first()
+        }?.take(5) // Берем только 5 дней
+    }
+
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -94,7 +119,7 @@ fun WeatherScreen(
         }
 
         // 5-day Forecast
-        state.forecast?.let { forecast ->
+        if (!dailyForecasts.isNullOrEmpty()) {
             Spacer(modifier = Modifier.height(32.dp))
             Text(
                 text = "5-Day Forecast",
@@ -105,7 +130,7 @@ fun WeatherScreen(
                 horizontalArrangement = Arrangement.spacedBy(16.dp),
                 contentPadding = PaddingValues(horizontal = 16.dp)
             ) {
-                items(forecast.list.take(5)) { item ->
+                items(dailyForecasts) { item ->
                     ForecastCard(item)
                 }
             }
