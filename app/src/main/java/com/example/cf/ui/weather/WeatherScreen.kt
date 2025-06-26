@@ -36,6 +36,11 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.AssistChip
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.WaterDrop
+import androidx.compose.material.icons.filled.Air
+import androidx.compose.material.icons.filled.Speed
+import androidx.compose.material.icons.filled.Cloud
+import androidx.compose.material.icons.filled.Visibility
 
 @Composable
 fun LoadingAnimation(
@@ -324,20 +329,24 @@ fun WeatherScreen(
                                 modifier = Modifier.fillMaxWidth()
                             ) {
                                 WeatherInfoItem(
-                                    title = "Humidity",
+                                    icon = Icons.Default.WaterDrop,
                                     value = "${weather.main.humidity}%"
                                 )
                                 WeatherInfoItem(
-                                    title = "Wind",
-                                    value = "${weather.wind.speed} m/s"
+                                    icon = Icons.Default.Air,
+                                    value = "${weather.wind.speed} м/с"
                                 )
                                 WeatherInfoItem(
-                                    title = "Pressure",
+                                    icon = Icons.Default.Speed,
                                     value = "${weather.main.pressure} hPa"
                                 )
                                 WeatherInfoItem(
-                                    title = "Clouds",
+                                    icon = Icons.Default.Cloud,
                                     value = "${weather.clouds.all}%"
+                                )
+                                WeatherInfoItem(
+                                    icon = Icons.Default.Visibility,
+                                    value = String.format("%.1f км", weather.visibility / 1000.0)
                                 )
                             }
                             Spacer(modifier = Modifier.height(8.dp))
@@ -395,7 +404,7 @@ fun WeatherScreen(
 
 @Composable
 fun WeatherInfoItem(
-    title: String,
+    icon: ImageVector,
     value: String,
     modifier: Modifier = Modifier
 ) {
@@ -403,15 +412,15 @@ fun WeatherInfoItem(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = modifier.padding(8.dp)
     ) {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            modifier = Modifier.size(24.dp)
         )
-        Spacer(modifier = Modifier.height(4.dp))
+        Spacer(modifier = Modifier.height(2.dp))
         Text(
             text = value,
-            style = MaterialTheme.typography.titleMedium
+            style = MaterialTheme.typography.bodySmall
         )
     }
 }
