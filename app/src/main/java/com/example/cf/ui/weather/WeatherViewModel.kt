@@ -38,6 +38,9 @@ class WeatherViewModel(
     private val _isCacheShown = MutableStateFlow(false)
     val isCacheShown: StateFlow<Boolean> = _isCacheShown.asStateFlow()
 
+    private val _cacheTimestamp = MutableStateFlow<Long?>(null)
+    val cacheTimestamp: StateFlow<Long?> = _cacheTimestamp.asStateFlow()
+
     init {
         Log.d("WeatherViewModel", "Initializing ViewModel")
         loadTheme()
@@ -105,6 +108,8 @@ class WeatherViewModel(
                 try {
                     preferences.saveCachedWeather(gson.toJson(current))
                     preferences.saveCachedForecast(gson.toJson(forecast))
+                    preferences.saveCachedTimestamp(System.currentTimeMillis())
+                    _cacheTimestamp.value = System.currentTimeMillis()
                 } catch (e: Exception) {
                     Log.e("WeatherViewModel", "Error caching weather/forecast", e)
                 }
@@ -130,6 +135,7 @@ class WeatherViewModel(
                 try {
                     val cachedWeatherJson = preferences.cachedWeather.first()
                     val cachedForecastJson = preferences.cachedForecast.first()
+                    val cachedTimestampValue = preferences.cachedTimestamp.first()
                     if (!cachedWeatherJson.isNullOrBlank() && !cachedForecastJson.isNullOrBlank()) {
                         val cachedWeather = gson.fromJson(cachedWeatherJson, WeatherResponse::class.java)
                         val cachedForecast = gson.fromJson(cachedForecastJson, ForecastResponse::class.java)
@@ -142,6 +148,7 @@ class WeatherViewModel(
                             )
                         }
                         _isCacheShown.value = true
+                        _cacheTimestamp.value = cachedTimestampValue
                         cacheUsed = true
                     }
                 } catch (ex: Exception) {

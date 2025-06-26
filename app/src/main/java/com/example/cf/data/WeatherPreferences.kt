@@ -21,6 +21,7 @@ class WeatherPreferences(private val context: Context) {
     private val UNIT_CELSIUS = stringPreferencesKey("unit_celsius")
     private val CACHE_WEATHER = stringPreferencesKey("cache_weather")
     private val CACHE_FORECAST = stringPreferencesKey("cache_forecast")
+    private val CACHE_TIMESTAMP = stringPreferencesKey("cache_timestamp")
 
     init {
         Log.d("WeatherPreferences", "Initializing preferences")
@@ -99,6 +100,26 @@ class WeatherPreferences(private val context: Context) {
             }
         } catch (e: Exception) {
             Log.e("WeatherPreferences", "Error saving cached forecast", e)
+        }
+    }
+
+    val cachedTimestamp: Flow<Long?> = context.dataStore.data
+        .catch { exception ->
+            Log.e("WeatherPreferences", "Error reading cached timestamp", exception)
+            emit(emptyPreferences())
+        }
+        .map { preferences ->
+            preferences[CACHE_TIMESTAMP]?.toLongOrNull()
+        }
+
+    suspend fun saveCachedTimestamp(timestamp: Long) {
+        try {
+            Log.d("WeatherPreferences", "Saving cached timestamp: $timestamp")
+            context.dataStore.edit { preferences ->
+                preferences[CACHE_TIMESTAMP] = timestamp.toString()
+            }
+        } catch (e: Exception) {
+            Log.e("WeatherPreferences", "Error saving cached timestamp", e)
         }
     }
 

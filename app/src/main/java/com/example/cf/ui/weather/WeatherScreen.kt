@@ -67,6 +67,7 @@ fun WeatherScreen(
     val density = LocalDensity.current
     val unit = if (state.isCelsius) "C" else "F"
     val isCacheShown by viewModel.isCacheShown.collectAsStateWithLifecycle()
+    val cacheTimestamp by viewModel.cacheTimestamp.collectAsStateWithLifecycle()
 
     // Получаем список уникальных дней для прогноза
     val dailyForecasts = remember(state.forecast) {
@@ -200,13 +201,18 @@ fun WeatherScreen(
         ) {
             Column(modifier = Modifier.fillMaxWidth()) {
                 if (isCacheShown) {
+                    val formattedTime = cacheTimestamp?.let {
+                        val sdf = SimpleDateFormat("dd.MM.yyyy HH:mm", Locale.getDefault())
+                        sdf.format(Date(it))
+                    } ?: "?"
                     Text(
-                        text = "Данные устаревшие (нет интернета)",
+                        text = "Данные устаревшие (нет интернета)\nПоследнее обновление: $formattedTime",
                         color = Color.Gray,
                         style = MaterialTheme.typography.bodySmall,
                         modifier = Modifier
                             .padding(bottom = 4.dp)
-                            .align(Alignment.CenterHorizontally)
+                            .align(Alignment.CenterHorizontally),
+                        textAlign = TextAlign.Center
                     )
                 }
                 state.weather?.let { weather ->
