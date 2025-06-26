@@ -44,6 +44,7 @@ import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.res.stringResource
 
 @Composable
 fun LoadingAnimation(
@@ -129,7 +130,7 @@ fun WeatherScreen(
                 value = state.city,
                 onValueChange = viewModel::onCityChange,
                 label = { Text("") },
-                placeholder = { Text("Город") },
+                placeholder = { Text(stringResource(R.string.placeholder_city)) },
                 singleLine = true,
                 modifier = Modifier.weight(1f)
             )
@@ -140,7 +141,7 @@ fun WeatherScreen(
             ) {
                 Icon(
                     imageVector = Icons.Default.LocationOn,
-                    contentDescription = "Моё местоположение"
+                    contentDescription = stringResource(R.string.my_location)
                 )
             }
             IconButton(
@@ -150,14 +151,14 @@ fun WeatherScreen(
             ) {
                 Icon(
                     imageVector = Icons.Default.Search,
-                    contentDescription = "Поиск"
+                    contentDescription = stringResource(R.string.search)
                 )
             }
             IconButton(
                 onClick = onSettingsClick,
                 modifier = Modifier.size(32.dp)
             ) {
-                Icon(Icons.Default.Settings, contentDescription = "Настройки")
+                Icon(Icons.Default.Settings, contentDescription = stringResource(R.string.settings))
             }
         }
         if (historyCities.isNotEmpty()) {
@@ -181,7 +182,7 @@ fun WeatherScreen(
                 ) {
                     Icon(
                         imageVector = Icons.Default.Delete,
-                        contentDescription = "Очистить историю"
+                        contentDescription = stringResource(R.string.clear_history)
                     )
                 }
             }
@@ -225,7 +226,7 @@ fun WeatherScreen(
                         sdf.format(Date(it))
                     } ?: "?"
                     Text(
-                        text = "Данные устаревшие (нет интернета)\nПоследнее обновление: $formattedTime",
+                        text = stringResource(R.string.outdated_data) + "\n" + stringResource(R.string.last_update, formattedTime),
                         color = Color.Gray,
                         style = MaterialTheme.typography.bodySmall,
                         modifier = Modifier
@@ -245,15 +246,15 @@ fun WeatherScreen(
                                 val desc = weather.weather.firstOrNull()?.description?.capitalize() ?: ""
                                 val temp = weather.main.temp
                                 val city = weather.name
-                                val unitStr = if (state.isCelsius) "°C" else "°F"
-                                val shareText = "Погода в $city: $temp$unitStr, $desc"
+                                val unitStr = if (state.isCelsius) stringResource(R.string.unit_celsius) else stringResource(R.string.unit_fahrenheit)
+                                val shareText = city + ": " + temp + unitStr + ", " + desc
                                 onShareWeather(shareText)
                             },
                             modifier = Modifier.size(32.dp)
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Share,
-                                contentDescription = "Поделиться погодой"
+                                contentDescription = stringResource(R.string.share_weather)
                             )
                         }
                     }
@@ -287,12 +288,12 @@ fun WeatherScreen(
                                 style = MaterialTheme.typography.displayLarge
                             )
                             Text(
-                                text = "Ощущается как: ${weather.main.feels_like}°$unit",
+                                text = stringResource(R.string.feels_like, weather.main.feels_like, unit),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
                             )
                             Text(
-                                text = "Мин: ${weather.main.temp_min}°$unit  Макс: ${weather.main.temp_max}°$unit",
+                                text = stringResource(R.string.min_max, weather.main.temp_min, weather.main.temp_max, unit),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
                             )
@@ -307,23 +308,23 @@ fun WeatherScreen(
                             ) {
                                 WeatherInfoItem(
                                     icon = Icons.Default.WaterDrop,
-                                    value = "${weather.main.humidity}%"
+                                    value = stringResource(R.string.humidity, weather.main.humidity)
                                 )
                                 WeatherInfoItem(
                                     icon = Icons.Default.Air,
-                                    value = "${weather.wind.speed} м/с"
+                                    value = stringResource(R.string.wind_speed, weather.wind.speed)
                                 )
                                 WeatherInfoItem(
                                     icon = Icons.Default.Speed,
-                                    value = "${weather.main.pressure} hPa"
+                                    value = stringResource(R.string.pressure, weather.main.pressure)
                                 )
                                 WeatherInfoItem(
                                     icon = Icons.Default.Cloud,
-                                    value = "${weather.clouds.all}%"
+                                    value = stringResource(R.string.cloudiness, weather.clouds.all)
                                 )
                                 WeatherInfoItem(
                                     icon = Icons.Default.Visibility,
-                                    value = String.format("%.1f км", weather.visibility / 1000.0)
+                                    value = stringResource(R.string.visibility, weather.visibility / 1000.0)
                                 )
                             }
                             Spacer(modifier = Modifier.height(8.dp))
@@ -333,8 +334,8 @@ fun WeatherScreen(
                             ) {
                                 val sunrise = java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault()).format(java.util.Date(weather.sys.sunrise * 1000))
                                 val sunset = java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault()).format(java.util.Date(weather.sys.sunset * 1000))
-                                Text("Восход: $sunrise", style = MaterialTheme.typography.bodySmall)
-                                Text("Закат: $sunset", style = MaterialTheme.typography.bodySmall)
+                                Text(stringResource(R.string.sunrise, sunrise), style = MaterialTheme.typography.bodySmall)
+                                Text(stringResource(R.string.sunset, sunset), style = MaterialTheme.typography.bodySmall)
                             }
                         }
                     }
@@ -355,7 +356,7 @@ fun WeatherScreen(
                     horizontalAlignment = Alignment.Start
                 ) {
                     Text(
-                        text = "5-Day Forecast",
+                        text = stringResource(R.string.forecast_title),
                         style = MaterialTheme.typography.titleMedium,
                         modifier = Modifier.padding(start = 8.dp, bottom = 4.dp)
                     )
