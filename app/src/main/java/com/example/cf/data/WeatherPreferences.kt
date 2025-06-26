@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
 import com.google.gson.Gson
+import kotlinx.coroutines.flow.first
 
 private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "weather_preferences")
 
@@ -194,7 +195,7 @@ class WeatherPreferences(private val context: Context) {
 
     suspend fun addCityToHistory(city: String) {
         val current = historyCities.first().toMutableList()
-        current.remove(city)
+        current.removeAll { it.equals(city, ignoreCase = true) }
         current.add(0, city)
         val trimmed = current.take(5)
         saveHistoryCities(trimmed)
