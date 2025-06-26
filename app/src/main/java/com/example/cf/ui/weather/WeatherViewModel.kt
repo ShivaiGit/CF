@@ -144,4 +144,9 @@ class WeatherViewModel(
             }
         }
     }
+
+    fun onMyLocationClick() {
+        Log.d("WeatherViewModel", "onMyLocationClick called")
+        // Реализация будет добавлена позже
+    }
 } 
