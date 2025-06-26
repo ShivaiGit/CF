@@ -6,10 +6,18 @@ import androidx.lifecycle.viewModelScope
 import com.example.cf.data.WeatherRepository
 import com.example.cf.data.WeatherPreferences
 import kotlinx.coroutines.async
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import retrofit2.HttpException
 import java.io.IOException
+
+sealed class LocationEvent {
+    object RequestLocation : LocationEvent()
+    data class LocationResult(val lat: Double, val lon: Double) : LocationEvent()
+    data class Error(val message: String) : LocationEvent()
+}
 
 class WeatherViewModel(
     private val repository: WeatherRepository,
@@ -18,6 +26,9 @@ class WeatherViewModel(
 
     private val _state = MutableStateFlow(WeatherState())
     val state: StateFlow<WeatherState> = _state.asStateFlow()
+
+    private val _locationEvents = Channel<LocationEvent>(Channel.BUFFERED)
+    val locationEvents: ReceiveChannel<LocationEvent> = _locationEvents
 
     init {
         Log.d("WeatherViewModel", "Initializing ViewModel")
@@ -147,6 +158,44 @@ class WeatherViewModel(
 
     fun onMyLocationClick() {
         Log.d("WeatherViewModel", "onMyLocationClick called")
-        // Реализация будет добавлена позже
+        viewModelScope.launch {
+            _locationEvents.send(LocationEvent.RequestLocation)
+        }
+    }
+
+    fun onLocationReceived(lat: Double, lon: Double) {
+        viewModelScope.launch {
+            try {
+                _state.update { it.copy(isLoading = true, error = null) }
+                val currentDeferred = async { repository.getCurrentWeatherByCoords(lat, lon) }
+                val forecastDeferred = async { repository.getForecastByCoords(lat, lon) }
+                val current = currentDeferred.await()
+                val forecast = forecastDeferred.await()
+                _state.update {
+                    it.copy(
+                        isLoading = false,
+                        weather = current,
+                        forecast = forecast,
+                        error = null,
+                        city = current.name
+                    )
+                }
+                preferences.saveCity(current.name)
+            } catch (e: Exception) {
+                Log.e("WeatherViewModel", "Error fetching weather by location", e)
+                _state.update {
+                    it.copy(
+                        isLoading = false,
+                        error = errorMessage(e)
+                    )
+                }
+            }
+        }
+    }
+
+    fun onLocationError(message: String) {
+        viewModelScope.launch {
+            _state.update { it.copy(error = message, isLoading = false) }
+        }
     }
 } 

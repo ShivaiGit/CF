@@ -14,6 +14,14 @@ import com.example.cf.ui.theme.CFTheme
 import com.example.cf.ui.weather.WeatherScreen
 import com.example.cf.ui.weather.WeatherViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.google.android.gms.location.LocationServices
+import com.google.android.gms.location.FusedLocationProviderClient
+import com.google.android.gms.tasks.CancellationTokenSource
+import android.Manifest
+import android.content.pm.PackageManager
+import androidx.core.app.ActivityCompat
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -52,6 +60,40 @@ class MainActivity : ComponentActivity() {
                     }
                 }
             }
+
+            val fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
+            lifecycleScope.launchWhenStarted {
+                for (event in viewModel.locationEvents) {
+                    when (event) {
+                        is LocationEvent.RequestLocation -> {
+                            if (ActivityCompat.checkSelfPermission(this@MainActivity, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                                ActivityCompat.requestPermissions(this@MainActivity, arrayOf(Manifest.permission.ACCESS_FINE_LOCATION), 1001)
+                            } else {
+                                val cts = CancellationTokenSource()
+                                fusedLocationClient.getCurrentLocation(com.google.android.gms.location.Priority.PRIORITY_HIGH_ACCURACY, cts.token)
+                                    .addOnSuccessListener { location ->
+                                        if (location != null) {
+                                            lifecycleScope.launch {
+                                                viewModel.onLocationReceived(location.latitude, location.longitude)
+                                            }
+                                        } else {
+                                            lifecycleScope.launch {
+                                                viewModel.onLocationError("Не удалось получить координаты")
+                                            }
+                                        }
+                                    }
+                                    .addOnFailureListener {
+                                        lifecycleScope.launch {
+                                            viewModel.onLocationError("Ошибка получения координат: ${it.message}")
+                                        }
+                                    }
+                            }
+                        }
+                        else -> {}
+                    }
+                }
+            }
+
             Log.d("MainActivity", "Setup completed successfully")
         } catch (e: Exception) {
             Log.e("MainActivity", "Error during initialization", e)
