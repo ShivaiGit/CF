@@ -26,6 +26,7 @@ import com.example.cf.ui.weather.LocationEvent
 import com.example.cf.ui.weather.SettingsScreen
 import androidx.compose.runtime.mutableStateOf
 import android.content.Intent
+import com.example.cf.BuildConfig
 
 class MainActivity : ComponentActivity() {
     private var showSettingsScreen = mutableStateOf(false)
@@ -42,7 +43,7 @@ class MainActivity : ComponentActivity() {
             val preferences: WeatherPreferences
             val viewModel: WeatherViewModel
             try {
-                repository = WeatherRepository("26fca3b3d5572df439654ff2f96d033d")
+                repository = WeatherRepository(BuildConfig.WEATHER_API_KEY)
                 Log.d("MainActivity", "Repository created")
                 preferences = WeatherPreferences(this)
                 Log.d("MainActivity", "Preferences created")
