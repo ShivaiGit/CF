@@ -12,4 +12,7 @@ class WeatherRepository(private val apiKey: String) {
 
     suspend fun getCurrentWeather(city: String) =
         api.getCurrentWeather(city, apiKey)
+
+    suspend fun getForecast(city: String) =
+        api.getForecast(city, apiKey)
 } 
