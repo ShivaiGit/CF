@@ -13,7 +13,7 @@ import com.example.cf.data.WeatherPreferences
 import com.example.cf.ui.theme.CFTheme
 import com.example.cf.ui.weather.WeatherScreen
 import com.example.cf.ui.weather.WeatherViewModel
-import androidx.compose.runtime.collectAsStateWithLifecycle
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -42,7 +42,7 @@ class MainActivity : ComponentActivity() {
             Log.d("MainActivity", "Before setContent")
             setContent {
                 Log.d("MainActivity", "Inside setContent")
-                val state by viewModel.state.collectAsStateWithLifecycle()
+                val state = viewModel.state.collectAsStateWithLifecycle().value
                 CFTheme(darkTheme = state.isDarkTheme) {
                     Surface(
                         modifier = Modifier.fillMaxSize(),
