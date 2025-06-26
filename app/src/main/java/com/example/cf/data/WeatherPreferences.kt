@@ -19,6 +19,8 @@ class WeatherPreferences(private val context: Context) {
     private val LAST_CITY = stringPreferencesKey("last_city")
     private val DARK_THEME = stringPreferencesKey("dark_theme")
     private val UNIT_CELSIUS = stringPreferencesKey("unit_celsius")
+    private val CACHE_WEATHER = stringPreferencesKey("cache_weather")
+    private val CACHE_FORECAST = stringPreferencesKey("cache_forecast")
 
     init {
         Log.d("WeatherPreferences", "Initializing preferences")
@@ -57,6 +59,48 @@ class WeatherPreferences(private val context: Context) {
         .map { preferences ->
             preferences[UNIT_CELSIUS]?.toBooleanStrictOrNull() ?: true
         }
+
+    // --- Кэш погоды ---
+    val cachedWeather: Flow<String?> = context.dataStore.data
+        .catch { exception ->
+            Log.e("WeatherPreferences", "Error reading cached weather", exception)
+            emit(emptyPreferences())
+        }
+        .map { preferences ->
+            preferences[CACHE_WEATHER]
+        }
+
+    suspend fun saveCachedWeather(json: String) {
+        try {
+            Log.d("WeatherPreferences", "Saving cached weather")
+            context.dataStore.edit { preferences ->
+                preferences[CACHE_WEATHER] = json
+            }
+        } catch (e: Exception) {
+            Log.e("WeatherPreferences", "Error saving cached weather", e)
+        }
+    }
+
+    // --- Кэш прогноза ---
+    val cachedForecast: Flow<String?> = context.dataStore.data
+        .catch { exception ->
+            Log.e("WeatherPreferences", "Error reading cached forecast", exception)
+            emit(emptyPreferences())
+        }
+        .map { preferences ->
+            preferences[CACHE_FORECAST]
+        }
+
+    suspend fun saveCachedForecast(json: String) {
+        try {
+            Log.d("WeatherPreferences", "Saving cached forecast")
+            context.dataStore.edit { preferences ->
+                preferences[CACHE_FORECAST] = json
+            }
+        } catch (e: Exception) {
+            Log.e("WeatherPreferences", "Error saving cached forecast", e)
+        }
+    }
 
     suspend fun saveCity(city: String) {
         try {
