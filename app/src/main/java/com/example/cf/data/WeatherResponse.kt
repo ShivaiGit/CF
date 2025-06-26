@@ -5,6 +5,7 @@ data class WeatherResponse(
     val main: Main,
     val wind: Wind,
     val sys: Sys,
+    val clouds: Clouds,
     val name: String
 )
 
@@ -30,4 +31,8 @@ data class Wind(
 data class Sys(
     val sunrise: Long,
     val sunset: Long
+)
+
+data class Clouds(
+    val all: Int
 ) 

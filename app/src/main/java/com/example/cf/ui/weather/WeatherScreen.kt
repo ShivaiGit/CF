@@ -335,6 +335,10 @@ fun WeatherScreen(
                                     title = "Pressure",
                                     value = "${weather.main.pressure} hPa"
                                 )
+                                WeatherInfoItem(
+                                    title = "Clouds",
+                                    value = "${weather.clouds.all}%"
+                                )
                             }
                             Spacer(modifier = Modifier.height(8.dp))
                             Row(
