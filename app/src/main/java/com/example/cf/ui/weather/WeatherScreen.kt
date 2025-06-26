@@ -114,9 +114,6 @@ fun WeatherScreen(
         }?.take(5) // Берем только 5 дней
     }
 
-    val unitStr = if (state.isCelsius) stringResource(R.string.unit_celsius) else stringResource(R.string.unit_fahrenheit)
-    val shareLabel = stringResource(R.string.share_weather)
-
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -245,6 +242,8 @@ fun WeatherScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Spacer(modifier = Modifier.weight(1f))
+                        val unitStr = if (state.isCelsius) stringResource(R.string.unit_celsius) else stringResource(R.string.unit_fahrenheit)
+                        val shareLabel = stringResource(R.string.share_weather)
                         IconButton(
                             onClick = {
                                 val desc = weather.weather.firstOrNull()?.description?.capitalize() ?: ""
