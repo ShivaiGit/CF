@@ -3,6 +3,7 @@ package com.example.cf.ui.weather
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.cf.data.WeatherRepository
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -21,15 +22,29 @@ class WeatherViewModel(
     }
 
     fun fetchWeather() {
+        if (_state.value.city.isBlank()) return
+
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true, error = null) }
             try {
-                val weather = repository.getCurrentWeather(_state.value.city)
-                _state.update { it.copy(isLoading = false, weather = weather) }
+                // Параллельно загружаем текущую погоду и прогноз
+                val currentDeferred = async { repository.getCurrentWeather(_state.value.city) }
+                val forecastDeferred = async { repository.getForecast(_state.value.city) }
+
+                val current = currentDeferred.await()
+                val forecast = forecastDeferred.await()
+
+                _state.update { 
+                    it.copy(
+                        isLoading = false,
+                        weather = current,
+                        forecast = forecast
+                    )
+                }
             } catch (e: Exception) {
                 _state.update { 
                     it.copy(
-                        isLoading = false, 
+                        isLoading = false,
                         error = e.message ?: "Unknown error occurred"
                     )
                 }
