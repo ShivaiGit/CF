@@ -1,26 +1,14 @@
 package com.example.cf.data
 
 import android.util.Log
-import retrofit2.Retrofit
-import retrofit2.converter.gson.GsonConverterFactory
 import java.io.IOException
 
-class WeatherRepository(private val apiKey: String) {
+class WeatherRepository(
+    private val apiKey: String,
     private val api: WeatherApiService
-
+) {
     init {
         Log.d("WeatherRepository", "Initializing API service")
-        try {
-            api = Retrofit.Builder()
-                .baseUrl("https://api.openweathermap.org/")
-                .addConverterFactory(GsonConverterFactory.create())
-                .build()
-                .create(WeatherApiService::class.java)
-            Log.d("WeatherRepository", "API service initialized successfully")
-        } catch (e: Exception) {
-            Log.e("WeatherRepository", "Failed to initialize API service", e)
-            throw e
-        }
     }
 
     suspend fun getCurrentWeather(city: String, units: String): WeatherResponse {

@@ -27,9 +27,15 @@ import com.example.cf.ui.weather.SettingsScreen
 import androidx.compose.runtime.mutableStateOf
 import android.content.Intent
 import com.example.cf.BuildConfig
+import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     private var showSettingsScreen = mutableStateOf(false)
+    
+    @Inject
+    lateinit var viewModel: WeatherViewModel
 
     override fun onCreate(savedInstanceState: Bundle?) {
         Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
@@ -39,21 +45,6 @@ class MainActivity : ComponentActivity() {
 
         try {
             Log.d("MainActivity", "Initializing components")
-            val repository: WeatherRepository
-            val preferences: WeatherPreferences
-            val viewModel: WeatherViewModel
-            try {
-                Log.d("MainActivity", "API Key: ${BuildConfig.WEATHER_API_KEY}")
-                repository = WeatherRepository(BuildConfig.WEATHER_API_KEY)
-                Log.d("MainActivity", "Repository created")
-                preferences = WeatherPreferences(this)
-                Log.d("MainActivity", "Preferences created")
-                viewModel = WeatherViewModel(repository, preferences)
-                Log.d("MainActivity", "ViewModel created")
-            } catch (e: Exception) {
-                Log.e("MainActivity", "Error creating repository, preferences, or ViewModel", e)
-                throw e
-            }
 
             Log.d("MainActivity", "Before setContent")
             setContent {

@@ -16,6 +16,8 @@ import com.google.gson.Gson
 import com.google.gson.JsonSyntaxException
 import com.example.cf.data.WeatherResponse
 import com.example.cf.data.ForecastResponse
+import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 
 sealed class LocationEvent {
     object RequestLocation : LocationEvent()
@@ -23,7 +25,8 @@ sealed class LocationEvent {
     data class Error(val message: String) : LocationEvent()
 }
 
-class WeatherViewModel(
+@HiltViewModel
+class WeatherViewModel @Inject constructor(
     private val repository: WeatherRepository,
     private val preferences: WeatherPreferences
 ) : ViewModel() {
