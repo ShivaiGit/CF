@@ -71,7 +71,7 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation("com.google.android.gms:play-services-location:21.0.1")
     implementation("androidx.compose.material:material-icons-extended:1.6.1")
-    
+    implementation("androidx.compose.material:material:1.6.1")
     // Hilt
     implementation(libs.hilt.android)
     kapt(libs.hilt.compiler)
