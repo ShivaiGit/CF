@@ -1,98 +1,130 @@
 package com.example.cf.ui.weather
 
+import android.util.Log
+import androidx.compose.animation.*
+import androidx.compose.animation.core.*
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.ExperimentalMaterialApi
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material.pullrefresh.PullRefreshIndicator
+import androidx.compose.material.pullrefresh.pullRefresh
+import androidx.compose.material.pullrefresh.rememberPullRefreshState
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.example.cf.domain.model.ForecastItem
-import java.text.SimpleDateFormat
-import java.util.*
-import androidx.compose.foundation.background
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.animation.*
-import androidx.compose.animation.core.*
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.size
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.runtime.getValue
-import androidx.compose.ui.platform.LocalDensity
-import android.util.Log
-import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.LocationOn
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.material3.AssistChip
-import androidx.compose.material.icons.filled.Share
-import androidx.compose.material.icons.filled.Star
-import androidx.compose.material.icons.filled.WaterDrop
-import androidx.compose.material.icons.filled.Air
-import androidx.compose.material.icons.filled.Speed
-import androidx.compose.material.icons.filled.Cloud
-import androidx.compose.material.icons.filled.Visibility
-import androidx.compose.material.icons.filled.Search
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.cf.R
-import androidx.compose.foundation.clickable
-import androidx.compose.material3.CardDefaults
-import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.toArgb
-import androidx.compose.ui.platform.LocalView
-import androidx.core.view.WindowCompat
-import androidx.compose.material.pullrefresh.PullRefreshIndicator
-import androidx.compose.material.pullrefresh.pullRefresh
-import androidx.compose.material.pullrefresh.rememberPullRefreshState
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.ExperimentalMaterialApi
+import com.example.cf.domain.model.ForecastItem
+import com.example.cf.domain.model.Weather
+import kotlinx.coroutines.delay
+import java.text.SimpleDateFormat
+import java.util.*
 
 @Composable
 fun LoadingAnimation(
     modifier: Modifier = Modifier
 ) {
     val transition = rememberInfiniteTransition(label = "loading")
+    
+    // Анимация масштабирования
     val scale by transition.animateFloat(
-        initialValue = 0.6f,
-        targetValue = 1.0f,
+        initialValue = 0.8f,
+        targetValue = 1.2f,
         animationSpec = infiniteRepeatable(
-            animation = tween(800, easing = EaseInOutCubic),
+            animation = tween(1000, easing = EaseInOutCubic),
             repeatMode = RepeatMode.Reverse
         ),
         label = "scale"
     )
     
+    // Анимация прозрачности
     val alpha by transition.animateFloat(
-        initialValue = 0.3f,
+        initialValue = 0.4f,
         targetValue = 1.0f,
         animationSpec = infiniteRepeatable(
-            animation = tween(1200, easing = EaseInOutCubic),
+            animation = tween(800, easing = EaseInOutCubic),
             repeatMode = RepeatMode.Reverse
         ),
         label = "alpha"
     )
+    
+    // Анимация вращения
+    val rotation by transition.animateFloat(
+        initialValue = 0f,
+        targetValue = 360f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(2000, easing = LinearEasing)
+        ),
+        label = "rotation"
+    )
 
-    Box(modifier = modifier) {
+    Box(
+        modifier = modifier,
+        contentAlignment = Alignment.Center
+    ) {
+        // Основной индикатор загрузки
         CircularProgressIndicator(
             modifier = Modifier
-                .size(48.dp * scale)
-                .align(Alignment.Center),
-            color = MaterialTheme.colorScheme.primary.copy(alpha = alpha),
-            strokeWidth = 4.dp
+                .size(60.dp * scale)
+                .graphicsLayer(
+                    alpha = alpha,
+                    rotationZ = rotation
+                ),
+            color = MaterialTheme.colorScheme.primary,
+            strokeWidth = 4.dp,
+            trackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
         )
+        
+        // Дополнительные круги для эффекта
+        repeat(3) { index ->
+            val delay = index * 200
+            val delayedTransition = rememberInfiniteTransition(label = "delayed_$index")
+            val delayedScale by delayedTransition.animateFloat(
+                initialValue = 0.3f,
+                targetValue = 0.8f,
+                animationSpec = infiniteRepeatable(
+                    animation = tween(1200, delayMillis = delay, easing = EaseInOutCubic),
+                    repeatMode = RepeatMode.Reverse
+                ),
+                label = "delayed_scale_$index"
+            )
+            
+            Box(
+                modifier = Modifier
+                    .size(40.dp * delayedScale)
+                    .background(
+                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f),
+                        shape = androidx.compose.foundation.shape.CircleShape
+                    )
+            )
+        }
     }
 }
 
@@ -118,6 +150,28 @@ fun WeatherScreen(
     val unit = if (state.isCelsius) "C" else "F"
     val configuration = LocalConfiguration.current
     val screenHeight = configuration.screenHeightDp.dp
+
+    // Получаем строки ресурсов в начале функции
+    val myLocationText = stringResource(R.string.my_location)
+    val settingsText = stringResource(R.string.settings)
+    val clearHistoryText = stringResource(R.string.clear_history)
+    val outdatedDataText = stringResource(R.string.outdated_data)
+    val lastUpdateText = stringResource(R.string.last_update)
+    val celsiusText = stringResource(R.string.unit_celsius)
+    val fahrenheitText = stringResource(R.string.unit_fahrenheit)
+    val shareWeatherText = stringResource(R.string.share_weather)
+    val feelsLikeText = stringResource(R.string.feels_like)
+    val minMaxText = stringResource(R.string.min_max)
+    val humidityText = stringResource(R.string.humidity)
+    val windSpeedText = stringResource(R.string.wind_speed)
+    val pressureText = stringResource(R.string.pressure)
+    val cloudinessText = stringResource(R.string.cloudiness)
+    val visibilityText = stringResource(R.string.visibility)
+    val sunriseText = stringResource(R.string.sunrise)
+    val sunsetText = stringResource(R.string.sunset)
+    val forecastTitleText = stringResource(R.string.forecast_title)
+    val placeholderText = stringResource(R.string.enter_city_name)
+    val clearText = stringResource(R.string.clear)
 
     // Pull-to-refresh состояние
     val pullRefreshState = rememberPullRefreshState(
@@ -160,210 +214,279 @@ fun WeatherScreen(
             .fillMaxSize()
             .pullRefresh(pullRefreshState)
     ) {
-        Column(
+        LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
                 .statusBarsPadding()
-                .padding(horizontal = 16.dp, vertical = 8.dp)
-                .verticalScroll(rememberScrollState()),
-            horizontalAlignment = Alignment.CenterHorizontally
+                .padding(horizontal = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            contentPadding = PaddingValues(vertical = 8.dp)
         ) {
             // Ошибка показывается через Text с анимацией
-            AnimatedVisibility(
-                visible = state.error != null,
-                enter = fadeIn() + expandVertically(),
-                exit = fadeOut() + shrinkVertically()
-            ) {
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 8.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.errorContainer
-                    ),
-                    shape = RoundedCornerShape(12.dp)
+            item {
+                AnimatedVisibility(
+                    visible = state.error != null,
+                    enter = fadeIn() + expandVertically(),
+                    exit = fadeOut() + shrinkVertically()
                 ) {
-                    Text(
-                        text = state.error ?: "",
-                        color = MaterialTheme.colorScheme.onErrorContainer,
-                        style = MaterialTheme.typography.bodyMedium,
-                        modifier = Modifier.padding(16.dp),
-                        textAlign = TextAlign.Center
-                    )
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 8.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.errorContainer
+                        ),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Text(
+                            text = state.error ?: "",
+                            color = MaterialTheme.colorScheme.onErrorContainer,
+                            style = MaterialTheme.typography.bodyMedium,
+                            modifier = Modifier.padding(16.dp),
+                            textAlign = TextAlign.Center
+                        )
+                    }
                 }
             }
             
             // Поисковая панель с улучшенным дизайном
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 8.dp),
-                shape = RoundedCornerShape(16.dp),
-                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surface
-                )
-            ) {
-                Row(
+            item {
+                Card(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    OutlinedTextField(
-                        value = state.city,
-                        onValueChange = viewModel::onCityChange,
-                        label = { Text(stringResource(R.string.placeholder_city)) },
-                        placeholder = { Text(stringResource(R.string.placeholder_city)) },
-                        singleLine = true,
-                        modifier = Modifier.weight(1f),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = MaterialTheme.colorScheme.primary,
-                            unfocusedBorderColor = MaterialTheme.colorScheme.outline
-                        )
+                        .padding(vertical = 8.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surface
                     )
-                    
-                    Spacer(modifier = Modifier.width(8.dp))
-                    
-                    IconButton(
-                        onClick = { viewModel.onMyLocationClick() },
-                        enabled = !state.isLoading,
+                ) {
+                    Column(
                         modifier = Modifier
-                            .size(48.dp)
-                            .background(
-                                color = MaterialTheme.colorScheme.primaryContainer,
-                                shape = RoundedCornerShape(12.dp)
-                            )
+                            .fillMaxWidth()
+                            .padding(16.dp)
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.LocationOn,
-                            contentDescription = stringResource(R.string.my_location),
-                            tint = MaterialTheme.colorScheme.onPrimaryContainer
+                        // Поле поиска города
+                        AnimatedSearchField(
+                            value = state.city,
+                            onValueChange = viewModel::onCityChange,
+                            onSearch = viewModel::fetchWeather,
+                            modifier = Modifier.fillMaxWidth(),
+                            enabled = !state.isLoading,
+                            placeholderText = placeholderText,
+                            clearText = clearText
                         )
-                    }
-                    
-                    IconButton(
-                        onClick = viewModel::fetchWeather,
-                        enabled = !state.isLoading && state.city.isNotBlank(),
-                        modifier = Modifier
-                            .size(48.dp)
-                            .background(
-                                color = if (state.city.isNotBlank()) MaterialTheme.colorScheme.primary 
-                                       else MaterialTheme.colorScheme.surfaceVariant,
-                                shape = RoundedCornerShape(12.dp)
-                            )
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Search,
-                            contentDescription = stringResource(R.string.search),
-                            tint = if (state.city.isNotBlank()) MaterialTheme.colorScheme.onPrimary 
-                                   else MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                    
-                    IconButton(
-                        onClick = onSettingsClick,
-                        modifier = Modifier
-                            .size(48.dp)
-                            .background(
-                                color = MaterialTheme.colorScheme.secondaryContainer,
-                                shape = RoundedCornerShape(12.dp)
-                            )
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Settings, 
-                            contentDescription = stringResource(R.string.settings),
-                            tint = MaterialTheme.colorScheme.onSecondaryContainer
-                        )
+                        
+                        Spacer(modifier = Modifier.height(12.dp))
+                        
+                        // Панель с кнопками
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceEvenly,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            // Кнопка "Моё местоположение"
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                AnimatedIconButton(
+                                    onClick = { viewModel.onMyLocationClick() },
+                                    enabled = !state.isLoading,
+                                    modifier = Modifier
+                                        .size(48.dp)
+                                        .background(
+                                            color = MaterialTheme.colorScheme.primaryContainer,
+                                            shape = RoundedCornerShape(12.dp)
+                                        ),
+                                    icon = {
+                                        Icon(
+                                            imageVector = Icons.Default.LocationOn,
+                                            contentDescription = myLocationText,
+                                            tint = MaterialTheme.colorScheme.onPrimaryContainer
+                                        )
+                                    }
+                                )
+                                Spacer(modifier = Modifier.height(2.dp))
+                                Text(
+                                    text = "Моё место",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                                )
+                            }
+                            
+                            // Кнопка "Настройки"
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                AnimatedIconButton(
+                                    onClick = onSettingsClick,
+                                    modifier = Modifier
+                                        .size(48.dp)
+                                        .background(
+                                            color = MaterialTheme.colorScheme.secondaryContainer,
+                                            shape = RoundedCornerShape(12.dp)
+                                        ),
+                                    icon = {
+                                        Icon(
+                                            imageVector = Icons.Default.Settings, 
+                                            contentDescription = settingsText,
+                                            tint = MaterialTheme.colorScheme.onSecondaryContainer
+                                        )
+                                    }
+                                )
+                                Spacer(modifier = Modifier.height(2.dp))
+                                Text(
+                                    text = "Настройки",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                                )
+                            }
+                        }
                     }
                 }
             }
             
             // История городов с улучшенным дизайном
-            AnimatedVisibility(
-                visible = historyCities.isNotEmpty(),
-                enter = fadeIn() + expandVertically(),
-                exit = fadeOut() + shrinkVertically()
-            ) {
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 8.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+            item {
+                AnimatedVisibility(
+                    visible = historyCities.isNotEmpty(),
+                    enter = fadeIn() + expandVertically(),
+                    exit = fadeOut() + shrinkVertically()
                 ) {
-                    Row(
+                    Card(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .horizontalScroll(rememberScrollState())
-                            .padding(12.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                            .padding(vertical = 4.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+                        )
                     ) {
-                        historyCities.forEach { city ->
-                            AssistChip(
-                                onClick = { viewModel.selectCityFromHistory(city) },
-                                label = { Text(city) },
-                                modifier = Modifier.padding(end = 8.dp),
-                                colors = AssistChipDefaults.assistChipColors(
-                                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                                    labelColor = MaterialTheme.colorScheme.onPrimaryContainer
-                                )
-                            )
-                        }
-                        IconButton(
-                            onClick = { viewModel.clearHistory() },
-                            modifier = Modifier.size(32.dp)
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(12.dp)
                         ) {
-                            Icon(
-                                imageVector = Icons.Default.Delete,
-                                contentDescription = stringResource(R.string.clear_history),
-                                tint = MaterialTheme.colorScheme.error
-                            )
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = "Недавние города:",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
+                                    modifier = Modifier.weight(1f)
+                                )
+                                IconButton(
+                                    onClick = { viewModel.clearHistory() },
+                                    modifier = Modifier.size(28.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Delete,
+                                        contentDescription = clearHistoryText,
+                                        tint = MaterialTheme.colorScheme.error,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                }
+                            }
+                            
+                            Spacer(modifier = Modifier.height(6.dp))
+                            
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .horizontalScroll(rememberScrollState()),
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                historyCities.forEach { city ->
+                                    AssistChip(
+                                        onClick = { viewModel.selectCityFromHistory(city) },
+                                        label = { 
+                                            Text(
+                                                text = city,
+                                                style = MaterialTheme.typography.bodySmall
+                                            ) 
+                                        },
+                                        modifier = Modifier.padding(vertical = 1.dp),
+                                        colors = AssistChipDefaults.assistChipColors(
+                                            containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.7f),
+                                            labelColor = MaterialTheme.colorScheme.onPrimaryContainer
+                                        ),
+                                        shape = RoundedCornerShape(8.dp)
+                                    )
+                                }
+                            }
                         }
                     }
                 }
             }
             
             // Показываем загрузку только если действительно загружаемся и город не пустой
-            AnimatedVisibility(
-                visible = state.isLoading && state.city.isNotBlank(),
-                enter = fadeIn() + expandVertically(),
-                exit = fadeOut() + shrinkVertically()
-            ) {
-                Log.d("WeatherScreen", "Showing loading animation")
-                LoadingAnimation(
-                    modifier = Modifier.padding(16.dp)
-                )
-            }
-            
-            // Показываем погоду только если она есть
-            AnimatedVisibility(
-                visible = state.weather != null,
-                enter = fadeIn(animationSpec = tween(500)) + expandVertically(animationSpec = tween(500)),
-                exit = fadeOut(animationSpec = tween(300)) + shrinkVertically(animationSpec = tween(300))
-            ) {
-                state.weather?.let { weather ->
-                    Log.d("WeatherScreen", "Showing weather for: ${weather.name}")
-                    WeatherCard(
-                        weather = weather,
-                        unit = unit,
-                        isCacheShown = isCacheShown,
-                        cacheTimestamp = cacheTimestamp,
-                        onShareWeather = onShareWeather
+            item {
+                AnimatedVisibility(
+                    visible = state.isLoading && state.city.isNotBlank(),
+                    enter = fadeIn() + expandVertically(),
+                    exit = fadeOut() + shrinkVertically()
+                ) {
+                    Log.d("WeatherScreen", "Showing loading animation")
+                    LoadingAnimation(
+                        modifier = Modifier.padding(16.dp)
                     )
                 }
             }
             
+            // Показываем погоду только если она есть
+            item {
+                AnimatedVisibility(
+                    visible = state.weather != null,
+                    enter = fadeIn(animationSpec = tween(500)) + expandVertically(animationSpec = tween(500)),
+                    exit = fadeOut(animationSpec = tween(300)) + shrinkVertically(animationSpec = tween(300))
+                ) {
+                    state.weather?.let { weather ->
+                        Log.d("WeatherScreen", "Showing weather for: ${weather.name}")
+                        WeatherCard(
+                            weather = weather,
+                            unit = unit,
+                            isCacheShown = isCacheShown,
+                            cacheTimestamp = cacheTimestamp,
+                            onShareWeather = onShareWeather,
+                            outdatedDataText = outdatedDataText,
+                            lastUpdateText = lastUpdateText,
+                            celsiusText = celsiusText,
+                            fahrenheitText = fahrenheitText,
+                            shareWeatherText = shareWeatherText,
+                            feelsLikeText = feelsLikeText,
+                            minMaxText = minMaxText,
+                            humidityText = humidityText,
+                            windSpeedText = windSpeedText,
+                            pressureText = pressureText,
+                            cloudinessText = cloudinessText,
+                            visibilityText = visibilityText,
+                            sunriseText = sunriseText,
+                            sunsetText = sunsetText
+                        )
+                    }
+                }
+            }
+            
             // Показываем прогноз только если он есть
-            AnimatedVisibility(
-                visible = !dailyForecasts.isNullOrEmpty(),
-                enter = fadeIn(animationSpec = tween(700)) + expandVertically(animationSpec = tween(700)),
-                exit = fadeOut(animationSpec = tween(300)) + shrinkVertically(animationSpec = tween(300))
-            ) {
-                if (!dailyForecasts.isNullOrEmpty()) {
-                    Log.d("WeatherScreen", "Showing forecast with ${dailyForecasts.size} items")
-                    ForecastSection(dailyForecasts = dailyForecasts, unit = unit)
+            item {
+                AnimatedVisibility(
+                    visible = !dailyForecasts.isNullOrEmpty(),
+                    enter = fadeIn(animationSpec = tween(700)) + expandVertically(animationSpec = tween(700)),
+                    exit = fadeOut(animationSpec = tween(300)) + shrinkVertically(animationSpec = tween(300))
+                ) {
+                    if (!dailyForecasts.isNullOrEmpty()) {
+                        Log.d("WeatherScreen", "Showing forecast with ${dailyForecasts.size} items")
+                        ForecastSection(
+                            dailyForecasts = dailyForecasts, 
+                            unit = unit,
+                            forecastTitleText = forecastTitleText
+                        )
+                    }
                 }
             }
         }
@@ -387,21 +510,53 @@ fun WeatherCard(
     unit: String,
     isCacheShown: Boolean,
     cacheTimestamp: Long?,
-    onShareWeather: (String) -> Unit
+    onShareWeather: (String) -> Unit,
+    outdatedDataText: String,
+    lastUpdateText: String,
+    celsiusText: String,
+    fahrenheitText: String,
+    shareWeatherText: String,
+    feelsLikeText: String,
+    minMaxText: String,
+    humidityText: String,
+    windSpeedText: String,
+    pressureText: String,
+    cloudinessText: String,
+    visibilityText: String,
+    sunriseText: String,
+    sunsetText: String
 ) {
+    var visible by remember { mutableStateOf(false) }
+    
+    LaunchedEffect(Unit) {
+        visible = true
+    }
+    
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 8.dp),
-        shape = RoundedCornerShape(20.dp),
+            .padding(vertical = 6.dp)
+            .graphicsLayer {
+                alpha = if (visible) 1f else 0f
+                translationY = if (visible) 0f else 50f
+            }
+            .animateContentSize(
+                animationSpec = spring(
+                    dampingRatio = Spring.DampingRatioMediumBouncy,
+                    stiffness = Spring.StiffnessLow
+                )
+            ),
+        shape = RoundedCornerShape(16.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
         )
     ) {
         Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.padding(20.dp)
+            modifier = Modifier
+                .padding(16.dp)
+                .fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
             // Кэш уведомление
             if (isCacheShown) {
@@ -412,17 +567,17 @@ fun WeatherCard(
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(bottom = 12.dp),
+                        .padding(bottom = 8.dp),
                     colors = CardDefaults.cardColors(
                         containerColor = MaterialTheme.colorScheme.tertiaryContainer
                     ),
                     shape = RoundedCornerShape(8.dp)
                 ) {
                     Text(
-                        text = stringResource(R.string.outdated_data) + "\n" + stringResource(R.string.last_update, formattedTime),
+                        text = outdatedDataText + "\n" + lastUpdateText.format(formattedTime),
                         color = MaterialTheme.colorScheme.onTertiaryContainer,
                         style = MaterialTheme.typography.bodySmall,
-                        modifier = Modifier.padding(8.dp),
+                        modifier = Modifier.padding(6.dp),
                         textAlign = TextAlign.Center
                     )
                 }
@@ -433,7 +588,7 @@ fun WeatherCard(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.End
             ) {
-                val unitStr = if (unit == "C") stringResource(R.string.unit_celsius) else stringResource(R.string.unit_fahrenheit)
+                val unitStr = if (unit == "C") celsiusText else fahrenheitText
                 IconButton(
                     onClick = {
                         val desc = weather.weather.firstOrNull()?.description?.capitalize() ?: ""
@@ -443,16 +598,17 @@ fun WeatherCard(
                         onShareWeather(shareText)
                     },
                     modifier = Modifier
-                        .size(40.dp)
+                        .size(36.dp)
                         .background(
                             color = MaterialTheme.colorScheme.primaryContainer,
-                            shape = RoundedCornerShape(10.dp)
+                            shape = RoundedCornerShape(8.dp)
                         )
                 ) {
                     Icon(
                         imageVector = Icons.Default.Share,
-                        contentDescription = stringResource(R.string.share_weather),
-                        tint = MaterialTheme.colorScheme.onPrimaryContainer
+                        contentDescription = shareWeatherText,
+                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                        modifier = Modifier.size(20.dp)
                     )
                 }
             }
@@ -460,36 +616,36 @@ fun WeatherCard(
             // Основная информация о погоде
             Text(
                 text = weather.name,
-                style = MaterialTheme.typography.headlineMedium,
+                style = MaterialTheme.typography.headlineSmall,
                 color = MaterialTheme.colorScheme.onSurface
             )
             
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(12.dp))
             
             weather.weather.firstOrNull()?.let { weatherInfo ->
                 WeatherIcon(
                     iconCode = weatherInfo.icon,
-                    modifier = Modifier.size(120.dp),
+                    modifier = Modifier.size(100.dp),
                     contentDescription = weatherInfo.description
                 )
             }
             
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(6.dp))
             
             Text(
                 text = "${weather.main.temp}°$unit",
-                style = MaterialTheme.typography.displayLarge,
+                style = MaterialTheme.typography.displayMedium,
                 color = MaterialTheme.colorScheme.primary
             )
             
             Text(
-                text = stringResource(R.string.feels_like, weather.main.feels_like, unit),
+                text = feelsLikeText.format(weather.main.feels_like, unit),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
             )
             
             Text(
-                text = stringResource(R.string.min_max, weather.main.temp_min, weather.main.temp_max, unit),
+                text = minMaxText.format(weather.main.temp_min, weather.main.temp_max, unit),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
             )
@@ -500,15 +656,27 @@ fun WeatherCard(
                 color = MaterialTheme.colorScheme.onSurface
             )
             
-            Spacer(modifier = Modifier.height(16.dp))
-            
-            // Детальная информация
-            WeatherDetailsGrid(weather = weather, unit = unit)
-            
             Spacer(modifier = Modifier.height(12.dp))
             
+            // Детальная информация
+            WeatherDetailsGrid(
+                weather = weather, 
+                unit = unit,
+                humidityText = humidityText,
+                windSpeedText = windSpeedText,
+                pressureText = pressureText,
+                cloudinessText = cloudinessText,
+                visibilityText = visibilityText
+            )
+            
+            Spacer(modifier = Modifier.height(8.dp))
+            
             // Время восхода и заката
-            SunriseSunsetRow(weather = weather)
+            SunriseSunsetRow(
+                weather = weather,
+                sunriseText = sunriseText,
+                sunsetText = sunsetText
+            )
         }
     }
 }
@@ -516,7 +684,12 @@ fun WeatherCard(
 @Composable
 fun WeatherDetailsGrid(
     weather: com.example.cf.domain.model.WeatherResponse,
-    unit: String
+    unit: String,
+    humidityText: String,
+    windSpeedText: String,
+    pressureText: String,
+    cloudinessText: String,
+    visibilityText: String
 ) {
     LazyRow(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -525,31 +698,31 @@ fun WeatherDetailsGrid(
         item {
             WeatherInfoItem(
                 icon = Icons.Default.WaterDrop,
-                value = stringResource(R.string.humidity, weather.main.humidity)
+                value = humidityText.format(weather.main.humidity)
             )
         }
         item {
             WeatherInfoItem(
                 icon = Icons.Default.Air,
-                value = stringResource(R.string.wind_speed, weather.wind.speed)
+                value = windSpeedText.format(weather.wind.speed)
             )
         }
         item {
             WeatherInfoItem(
                 icon = Icons.Default.Speed,
-                value = stringResource(R.string.pressure, weather.main.pressure)
+                value = pressureText.format(weather.main.pressure)
             )
         }
         item {
             WeatherInfoItem(
                 icon = Icons.Default.Cloud,
-                value = stringResource(R.string.cloudiness, weather.clouds.all)
+                value = cloudinessText.format(weather.clouds.all)
             )
         }
         item {
             WeatherInfoItem(
                 icon = Icons.Default.Visibility,
-                value = stringResource(R.string.visibility, weather.visibility / 1000.0)
+                value = visibilityText.format(weather.visibility / 1000.0)
             )
         }
     }
@@ -557,15 +730,17 @@ fun WeatherDetailsGrid(
 
 @Composable
 fun SunriseSunsetRow(
-    weather: com.example.cf.domain.model.WeatherResponse
+    weather: com.example.cf.domain.model.WeatherResponse,
+    sunriseText: String,
+    sunsetText: String
 ) {
+    val sunrise = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(weather.sys.sunrise * 1000))
+    val sunset = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(weather.sys.sunset * 1000))
+    
     Row(
         horizontalArrangement = Arrangement.SpaceEvenly,
         modifier = Modifier.fillMaxWidth()
     ) {
-        val sunrise = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(weather.sys.sunrise * 1000))
-        val sunset = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(weather.sys.sunset * 1000))
-        
         Card(
             modifier = Modifier.weight(1f),
             shape = RoundedCornerShape(8.dp),
@@ -574,7 +749,7 @@ fun SunriseSunsetRow(
             )
         ) {
             Text(
-                text = stringResource(R.string.sunrise, sunrise), 
+                text = sunriseText.format(sunrise), 
                 style = MaterialTheme.typography.bodySmall,
                 modifier = Modifier.padding(8.dp),
                 textAlign = TextAlign.Center,
@@ -592,7 +767,7 @@ fun SunriseSunsetRow(
             )
         ) {
             Text(
-                text = stringResource(R.string.sunset, sunset), 
+                text = sunsetText.format(sunset), 
                 style = MaterialTheme.typography.bodySmall,
                 modifier = Modifier.padding(8.dp),
                 textAlign = TextAlign.Center,
@@ -605,7 +780,8 @@ fun SunriseSunsetRow(
 @Composable
 fun ForecastSection(
     dailyForecasts: List<ForecastItem>,
-    unit: String
+    unit: String,
+    forecastTitleText: String
 ) {
     Column(
         modifier = Modifier
@@ -613,7 +789,7 @@ fun ForecastSection(
             .padding(vertical = 8.dp)
     ) {
         Text(
-            text = stringResource(R.string.forecast_title),
+            text = forecastTitleText,
             style = MaterialTheme.typography.titleMedium,
             modifier = Modifier.padding(bottom = 12.dp),
             color = MaterialTheme.colorScheme.onSurface
@@ -666,11 +842,31 @@ fun WeatherInfoItem(
 }
 
 @Composable
-fun ForecastCard(forecast: ForecastItem, unit: String) {
+fun ForecastCard(
+    forecast: ForecastItem,
+    unit: String
+) {
+    var visible by remember { mutableStateOf(false) }
+    
+    LaunchedEffect(Unit) {
+        delay(100) // Небольшая задержка для эффекта каскада
+        visible = true
+    }
+    
     Card(
         modifier = Modifier
             .width(160.dp)
-            .height(200.dp),
+            .height(200.dp)
+            .graphicsLayer {
+                alpha = if (visible) 1f else 0f
+                translationX = if (visible) 0f else 30f
+            }
+            .animateContentSize(
+                animationSpec = spring(
+                    dampingRatio = Spring.DampingRatioMediumBouncy,
+                    stiffness = Spring.StiffnessLow
+                )
+            ),
         shape = RoundedCornerShape(16.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
         colors = CardDefaults.cardColors(
@@ -736,4 +932,109 @@ fun ForecastCard(forecast: ForecastItem, unit: String) {
 
 private fun String.capitalize(): String {
     return this.replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() }
+}
+
+@Composable
+fun AnimatedIconButton(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    icon: @Composable () -> Unit
+) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+    
+    val scale by animateFloatAsState(
+        targetValue = if (isPressed) 0.9f else 1f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessLow
+        ),
+        label = "scale"
+    )
+    
+    IconButton(
+        onClick = onClick,
+        modifier = modifier
+            .scale(scale)
+            .graphicsLayer {
+                shadowElevation = if (isPressed) 2f else 4f
+            },
+        enabled = enabled,
+        interactionSource = interactionSource
+    ) {
+        icon()
+    }
+}
+
+@Composable
+fun AnimatedSearchField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    onSearch: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    placeholderText: String,
+    clearText: String
+) {
+    var isFocused by remember { mutableStateOf(false) }
+    
+    val scaleX by animateFloatAsState(
+        targetValue = if (isFocused) 1.02f else 1f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessLow
+        ),
+        label = "scale"
+    )
+    
+    OutlinedTextField(
+        value = value,
+        onValueChange = onValueChange,
+        modifier = modifier
+            .scale(scaleX)
+            .graphicsLayer {
+                shadowElevation = if (isFocused) 8f else 2f
+            },
+        enabled = enabled,
+        singleLine = true,
+        placeholder = {
+            Text(
+                text = placeholderText,
+                style = MaterialTheme.typography.bodyMedium
+            )
+        },
+        leadingIcon = {
+            Icon(
+                imageVector = Icons.Default.Search,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        },
+        trailingIcon = {
+            if (value.isNotEmpty()) {
+                IconButton(
+                    onClick = { onValueChange("") }
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Clear,
+                        contentDescription = clearText,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        },
+        keyboardOptions = KeyboardOptions(
+            imeAction = ImeAction.Search
+        ),
+        keyboardActions = KeyboardActions(
+            onSearch = { onSearch() }
+        ),
+        colors = OutlinedTextFieldDefaults.colors(
+            focusedBorderColor = MaterialTheme.colorScheme.primary,
+            unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+            focusedLabelColor = MaterialTheme.colorScheme.primary,
+            unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    )
 } 

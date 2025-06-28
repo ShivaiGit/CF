@@ -30,4 +30,6 @@
     <string name="loading">Загрузка...</string>
     <string name="history">История</string>
     <string name="placeholder_city">Город</string>
+    <string name="enter_city_name">Введите название города</string>
+    <string name="clear">Очистить</string>
 </resources>
