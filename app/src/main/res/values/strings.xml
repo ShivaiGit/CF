@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">°C°Ф</string>
+    <string name="app_name">CF°</string>
     <string name="settings">Настройки</string>
     <string name="city">Город</string>
     <string name="search">Поиск</string>
@@ -7,15 +7,15 @@
     <string name="clear_history">Очистить историю</string>
     <string name="outdated_data">Данные устаревшие (нет интернета)</string>
     <string name="last_update">Последнее обновление: %1$s</string>
-    <string name="feels_like">Ощущается как: %1$s°%2$s</string>
-    <string name="min_max">Мин: %1$s°%3$s  Макс: %2$s°%3$s</string>
-    <string name="sunrise">Восход: %1$s</string>
-    <string name="sunset">Закат: %1$s</string>
-    <string name="wind_speed">%1$s м/с</string>
-    <string name="pressure">%1$s hPa</string>
-    <string name="humidity">%1$s%%</string>
-    <string name="cloudiness">%1$s%%</string>
-    <string name="visibility">%1$.1f км</string>
+    <string name="feels_like">Ощущается как:</string>
+    <string name="min_max">Мин: %1$s  Макс: %2$s</string>
+    <string name="sunrise">Восход:</string>
+    <string name="sunset">Закат:</string>
+    <string name="wind_speed">Ветер</string>
+    <string name="pressure">Давление</string>
+    <string name="humidity">Влажность</string>
+    <string name="cloudiness">Облачность</string>
+    <string name="visibility">Видимость</string>
     <string name="share_weather">Поделиться погодой</string>
     <string name="forecast_title">5-дневный прогноз</string>
     <string name="unit_celsius">°C</string>
