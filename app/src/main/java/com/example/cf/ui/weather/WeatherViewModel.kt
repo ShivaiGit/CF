@@ -50,7 +50,6 @@ class WeatherViewModel @Inject constructor(
     init {
         Log.d("WeatherViewModel", "Initializing ViewModel")
         try {
-            loadTheme()
             loadSavedCity()
             viewModelScope.launch {
                 try {
@@ -196,29 +195,6 @@ class WeatherViewModel @Inject constructor(
                     }
                     _isCacheShown.value = false
                 }
-            }
-        }
-    }
-
-    fun toggleTheme() {
-        val newTheme = !_state.value.isDarkTheme
-        _state.update { it.copy(isDarkTheme = newTheme) }
-        viewModelScope.launch {
-            try {
-                preferences.saveDarkTheme(newTheme)
-            } catch (e: Exception) {
-                Log.e("WeatherViewModel", "Error saving theme", e)
-            }
-        }
-    }
-
-    private fun loadTheme() {
-        viewModelScope.launch {
-            try {
-                val isDark = preferences.isDarkTheme.first()
-                _state.update { it.copy(isDarkTheme = isDark) }
-            } catch (e: Exception) {
-                Log.e("WeatherViewModel", "Error loading theme", e)
             }
         }
     }

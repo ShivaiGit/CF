@@ -50,7 +50,7 @@ class MainActivity : ComponentActivity() {
                 val state = viewModel.state.collectAsStateWithLifecycle().value
                 Log.d("MainActivity", "State collected: city=${state.city}, isLoading=${state.isLoading}")
                 
-                CFTheme(darkTheme = state.isDarkTheme) {
+                CFTheme {
                     Surface(
                         modifier = Modifier.fillMaxSize(),
                         color = MaterialTheme.colorScheme.background

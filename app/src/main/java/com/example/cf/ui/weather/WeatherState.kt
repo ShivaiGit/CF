@@ -8,7 +8,6 @@ data class WeatherState(
     val weatherResult: Result<WeatherResponse> = Result.Idle,
     val forecastResult: Result<ForecastResponse> = Result.Idle,
     val city: String = "",
-    val isDarkTheme: Boolean = false,
     val isCelsius: Boolean = true
 ) {
     val isLoading: Boolean
