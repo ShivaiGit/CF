@@ -30,15 +30,40 @@ android {
         }
 
         buildConfigField("String", "WEATHER_API_KEY", "\"${localProperties.getProperty("WEATHER_API_KEY", "")}\"")
+
+        // Оптимизации производительности
+        multiDexEnabled = true
+        
+        // Включаем R8 оптимизации
+        proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
     }
 
     buildTypes {
         release {
+            isMinifyEnabled = true
+            isShrinkResources = true
+            
+            // Оптимизации для релиза
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            
+            // Включаем все оптимизации
+            isDebuggable = false
+            isJniDebuggable = false
+            isRenderscriptDebuggable = false
+            isPseudoLocalesEnabled = false
+            isZipAlignEnabled = true
+        }
+        
+        debug {
             isMinifyEnabled = false
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
-            )
+            isShrinkResources = false
+            
+            // Оптимизации для отладки
+            isDebuggable = true
+            
+            // Включаем профилирование производительности
+            applicationIdSuffix = ".debug"
+            versionNameSuffix = "-debug"
         }
     }
     compileOptions {
@@ -47,6 +72,16 @@ android {
     }
     kotlinOptions {
         jvmTarget = "17"
+        
+        // Оптимизации Kotlin компилятора
+        freeCompilerArgs += listOf(
+            "-opt-in=kotlin.RequiresOptIn",
+            "-opt-in=kotlinx.coroutines.ExperimentalCoroutinesApi",
+            "-opt-in=androidx.compose.material3.ExperimentalMaterial3Api",
+            "-opt-in=androidx.compose.material.ExperimentalMaterialApi",
+            "-Xjvm-default=all",
+            "-Xuse-k2"
+        )
     }
     buildFeatures {
         compose = true
@@ -58,6 +93,43 @@ android {
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
+            
+            // Оптимизации упаковки
+            pickFirsts += "META-INF/gradle/incremental.annotation.processors"
+        }
+    }
+    
+    // Оптимизации сборки
+    buildTypes {
+        getByName("release") {
+            // Включаем все оптимизации R8
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
+        }
+    }
+    
+    // Оптимизации для разных архитектур
+    splits {
+        abi {
+            isEnable = true
+            reset()
+            include("armeabi-v7a", "arm64-v8a", "x86", "x86_64")
+            isUniversalApk = false
+        }
+    }
+    
+    // Оптимизации для bundle
+    bundle {
+        language {
+            enableSplit = true
+        }
+        density {
+            enableSplit = true
+        }
+        abi {
+            enableSplit = true
         }
     }
 }
@@ -104,6 +176,12 @@ dependencies {
     androidTestImplementation("androidx.compose.ui:ui-test-junit4")
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
+    
+    // Профилирование производительности
+    debugImplementation("androidx.profileinstaller:profileinstaller:1.3.1")
+    
+    // Оптимизации памяти
+    implementation("androidx.multidex:multidex:2.0.1")
 }
 
 kapt {

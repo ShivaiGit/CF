@@ -146,25 +146,30 @@ fun WeatherScreen(
     
     Log.d("WeatherScreen", "States collected: city=${state.city}, isLoading=${state.isLoading}, weather=${state.weather != null}")
     
-    val unit = if (state.isCelsius) "C" else "F"
-
-    // Получаем строки ресурсов в начале функции
-    val myLocationText = stringResource(R.string.my_location)
-    val settingsText = stringResource(R.string.settings)
-    val outdatedDataText = stringResource(R.string.outdated_data)
-    val lastUpdateText = stringResource(R.string.last_update)
-    val feelsLikeText = stringResource(R.string.feels_like)
-    val minMaxText = stringResource(R.string.min_max)
-    val humidityText = stringResource(R.string.humidity)
-    val windSpeedText = stringResource(R.string.wind_speed)
-    val pressureText = stringResource(R.string.pressure)
-    val cloudinessText = stringResource(R.string.cloudiness)
-    val visibilityText = stringResource(R.string.visibility)
-    val sunriseText = stringResource(R.string.sunrise)
-    val sunsetText = stringResource(R.string.sunset)
-    val forecastTitleText = stringResource(R.string.forecast_title)
-    val placeholderText = stringResource(R.string.enter_city_name)
-    val clearText = stringResource(R.string.clear)
+    // Оптимизируем вычисления с помощью derivedStateOf
+    val unit by remember { derivedStateOf { if (state.isCelsius) "C" else "F" } }
+    
+    // Получаем строки ресурсов в начале функции - оптимизация
+    val stringResources = remember {
+        StringResources(
+            myLocation = stringResource(R.string.my_location),
+            settings = stringResource(R.string.settings),
+            outdatedData = stringResource(R.string.outdated_data),
+            lastUpdate = stringResource(R.string.last_update),
+            feelsLike = stringResource(R.string.feels_like),
+            minMax = stringResource(R.string.min_max),
+            humidity = stringResource(R.string.humidity),
+            windSpeed = stringResource(R.string.wind_speed),
+            pressure = stringResource(R.string.pressure),
+            cloudiness = stringResource(R.string.cloudiness),
+            visibility = stringResource(R.string.visibility),
+            sunrise = stringResource(R.string.sunrise),
+            sunset = stringResource(R.string.sunset),
+            forecastTitle = stringResource(R.string.forecast_title),
+            placeholder = stringResource(R.string.enter_city_name),
+            clear = stringResource(R.string.clear)
+        )
+    }
 
     // Pull-to-refresh состояние
     val pullRefreshState = rememberPullRefreshState(
@@ -176,28 +181,30 @@ fun WeatherScreen(
         }
     )
 
-    // Оптимизируем remember для dailyForecasts
-    val dailyForecasts = remember(state.forecast?.list) {
-        Log.d("WeatherScreen", "Calculating dailyForecasts")
-        state.forecast?.list?.groupBy { item ->
-            val date = Date(item.dt * 1000)
-            val calendar = Calendar.getInstance().apply {
-                time = date
-                set(Calendar.HOUR_OF_DAY, 0)
-                set(Calendar.MINUTE, 0)
-                set(Calendar.SECOND, 0)
-                set(Calendar.MILLISECOND, 0)
-            }
-            calendar.time
-        }?.map { (_, items) ->
-            items.minByOrNull { item ->
+    // Оптимизируем remember для dailyForecasts с ключами
+    val dailyForecasts by remember(state.forecast?.list) {
+        derivedStateOf {
+            Log.d("WeatherScreen", "Calculating dailyForecasts")
+            state.forecast?.list?.groupBy { item ->
+                val date = Date(item.dt * 1000)
                 val calendar = Calendar.getInstance().apply {
-                    time = Date(item.dt * 1000)
+                    time = date
+                    set(Calendar.HOUR_OF_DAY, 0)
+                    set(Calendar.MINUTE, 0)
+                    set(Calendar.SECOND, 0)
+                    set(Calendar.MILLISECOND, 0)
                 }
-                val hour = calendar.get(Calendar.HOUR_OF_DAY)
-                Math.abs(hour - 12)
-            } ?: items.first()
-        }?.take(5)
+                calendar.time
+            }?.map { (_, items) ->
+                items.minByOrNull { item ->
+                    val calendar = Calendar.getInstance().apply {
+                        time = Date(item.dt * 1000)
+                    }
+                    val hour = calendar.get(Calendar.HOUR_OF_DAY)
+                    Math.abs(hour - 12)
+                } ?: items.first()
+            }?.take(5)
+        }
     }
 
     Log.d("WeatherScreen", "dailyForecasts size: ${dailyForecasts?.size}")
@@ -216,7 +223,7 @@ fun WeatherScreen(
             contentPadding = PaddingValues(vertical = 4.dp)
         ) {
             // Ошибка показывается через Text с анимацией
-            item {
+            item(key = "error") {
                 AnimatedVisibility(
                     visible = state.error != null,
                     enter = fadeIn() + expandVertically(),
@@ -243,7 +250,7 @@ fun WeatherScreen(
             }
             
             // Поисковая панель с улучшенным дизайном
-            item {
+            item(key = "search_panel") {
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -268,8 +275,8 @@ fun WeatherScreen(
                             onSearch = viewModel::fetchWeather,
                             modifier = Modifier.weight(1f),
                             enabled = !state.isLoading,
-                            placeholderText = placeholderText,
-                            clearText = clearText,
+                            placeholderText = stringResources.placeholder,
+                            clearText = stringResources.clear,
                             historyCities = historyCities,
                             onHistoryItemClick = { viewModel.selectCityFromHistory(it) }
                         )
@@ -287,7 +294,7 @@ fun WeatherScreen(
                             icon = {
                                 Icon(
                                     imageVector = Icons.Default.LocationOn,
-                                    contentDescription = myLocationText,
+                                    contentDescription = stringResources.myLocation,
                                     tint = MaterialTheme.colorScheme.onPrimaryContainer
                                 )
                             }
@@ -297,7 +304,7 @@ fun WeatherScreen(
             }
             
             // Показываем загрузку только если действительно загружаемся и город не пустой
-            item {
+            item(key = "loading") {
                 AnimatedVisibility(
                     visible = state.isLoading && state.city.isNotBlank(),
                     enter = fadeIn() + expandVertically(),
@@ -311,7 +318,7 @@ fun WeatherScreen(
             }
             
             // Показываем погоду только если она есть
-            item {
+            item(key = "weather_card") {
                 AnimatedVisibility(
                     visible = state.weather != null,
                     enter = fadeIn(animationSpec = tween(500)) + expandVertically(animationSpec = tween(500)),
@@ -324,24 +331,14 @@ fun WeatherScreen(
                             unit = unit,
                             isCacheShown = isCacheShown,
                             cacheTimestamp = cacheTimestamp,
-                            outdatedDataText = outdatedDataText,
-                            lastUpdateText = lastUpdateText,
-                            feelsLikeText = feelsLikeText,
-                            minMaxText = minMaxText,
-                            humidityText = humidityText,
-                            windSpeedText = windSpeedText,
-                            pressureText = pressureText,
-                            cloudinessText = cloudinessText,
-                            visibilityText = visibilityText,
-                            sunriseText = sunriseText,
-                            sunsetText = sunsetText
+                            stringResources = stringResources
                         )
                     }
                 }
             }
             
             // Показываем прогноз только если он есть
-            item {
+            item(key = "forecast_section") {
                 AnimatedVisibility(
                     visible = !dailyForecasts.isNullOrEmpty(),
                     enter = fadeIn(animationSpec = tween(700)) + expandVertically(animationSpec = tween(700)),
@@ -352,7 +349,7 @@ fun WeatherScreen(
                         ForecastSection(
                             dailyForecasts = dailyForecasts, 
                             unit = unit,
-                            forecastTitleText = forecastTitleText
+                            forecastTitleText = stringResources.forecastTitle
                         )
                     }
                 }
@@ -386,7 +383,7 @@ fun WeatherScreen(
             ) {
                 Icon(
                     imageVector = Icons.Default.Settings,
-                    contentDescription = settingsText,
+                    contentDescription = stringResources.settings,
                     modifier = Modifier.size(24.dp)
                 )
             }
@@ -396,45 +393,61 @@ fun WeatherScreen(
     Log.d("WeatherScreen", "WeatherScreen composition completed")
 }
 
+// Класс для хранения строковых ресурсов - оптимизация
+private data class StringResources(
+    val myLocation: String,
+    val settings: String,
+    val outdatedData: String,
+    val lastUpdate: String,
+    val feelsLike: String,
+    val minMax: String,
+    val humidity: String,
+    val windSpeed: String,
+    val pressure: String,
+    val cloudiness: String,
+    val visibility: String,
+    val sunrise: String,
+    val sunset: String,
+    val forecastTitle: String,
+    val placeholder: String,
+    val clear: String
+)
+
 @Composable
 fun WeatherCard(
-    weather: com.example.cf.domain.model.WeatherResponse,
+    weather: Weather,
     unit: String,
     isCacheShown: Boolean,
     cacheTimestamp: Long?,
-    outdatedDataText: String,
-    lastUpdateText: String,
-    feelsLikeText: String,
-    minMaxText: String,
-    humidityText: String,
-    windSpeedText: String,
-    pressureText: String,
-    cloudinessText: String,
-    visibilityText: String,
-    sunriseText: String,
-    sunsetText: String
+    stringResources: StringResources,
+    modifier: Modifier = Modifier
 ) {
-    var visible by remember { mutableStateOf(false) }
-    
-    LaunchedEffect(Unit) {
-        visible = true
+    // Оптимизируем вычисления с помощью remember
+    val temperature by remember(weather.main.temp) { 
+        derivedStateOf { "${weather.main.temp.toInt()}°$unit" }
     }
     
+    val feelsLike by remember(weather.main.feelsLike) { 
+        derivedStateOf { "${weather.main.feelsLike.toInt()}°$unit" }
+    }
+    
+    val minMax by remember(weather.main.tempMin, weather.main.tempMax) { 
+        derivedStateOf { 
+            "${weather.main.tempMin.toInt()}°$unit / ${weather.main.tempMax.toInt()}°$unit" 
+        }
+    }
+
     Card(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .padding(vertical = 4.dp)
-            .graphicsLayer {
-                alpha = if (visible) 1f else 0f
-                translationY = if (visible) 0f else 50f
-            }
             .animateContentSize(
                 animationSpec = spring(
                     dampingRatio = Spring.DampingRatioMediumBouncy,
                     stiffness = Spring.StiffnessLow
                 )
             ),
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(20.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
@@ -442,196 +455,192 @@ fun WeatherCard(
     ) {
         Column(
             modifier = Modifier
-                .padding(12.dp)
-                .fillMaxWidth(),
-            horizontalAlignment = Alignment.CenterHorizontally
+                .fillMaxWidth()
+                .padding(20.dp)
         ) {
-            // Кэш уведомление
-            if (isCacheShown) {
-                val formattedTime = cacheTimestamp?.let {
-                    val sdf = SimpleDateFormat("dd.MM.yyyy HH:mm", Locale.getDefault())
-                    sdf.format(Date(it))
-                } ?: "?"
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 6.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.tertiaryContainer
-                    ),
-                    shape = RoundedCornerShape(8.dp)
-                ) {
-                    Text(
-                        text = outdatedDataText + "\n" + lastUpdateText.format(formattedTime),
-                        color = MaterialTheme.colorScheme.onTertiaryContainer,
-                        style = MaterialTheme.typography.bodySmall,
-                        modifier = Modifier.padding(4.dp),
-                        textAlign = TextAlign.Center
-                    )
+            // Заголовок с названием города и кэш-индикатором
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = weather.name,
+                    style = MaterialTheme.typography.headlineMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.weight(1f)
+                )
+                
+                if (isCacheShown) {
+                    Card(
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.tertiaryContainer
+                        ),
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Text(
+                            text = stringResources.outdatedData,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onTertiaryContainer,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                        )
+                    }
                 }
             }
             
             // Основная информация о погоде
-            Text(
-                text = weather.name,
-                style = MaterialTheme.typography.headlineSmall,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-            
-            Spacer(modifier = Modifier.height(8.dp))
-            
-            weather.weather.firstOrNull()?.let { weatherInfo ->
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Температура и описание
+                Column(
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text(
+                        text = temperature,
+                        style = MaterialTheme.typography.displayLarge,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Text(
+                        text = weather.weather.firstOrNull()?.description?.capitalize() ?: "",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                
+                // Иконка погоды
                 WeatherIcon(
-                    iconCode = weatherInfo.icon,
-                    modifier = Modifier.size(80.dp),
-                    contentDescription = weatherInfo.description
+                    weatherCode = weather.weather.firstOrNull()?.id ?: 800,
+                    modifier = Modifier.size(80.dp)
                 )
             }
             
-            Spacer(modifier = Modifier.height(4.dp))
+            // Дополнительная информация
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                WeatherInfoRow(
+                    icon = Icons.Default.Thermostat,
+                    label = stringResources.feelsLike,
+                    value = feelsLike
+                )
+                
+                WeatherInfoRow(
+                    icon = Icons.Default.ShowChart,
+                    label = stringResources.minMax,
+                    value = minMax
+                )
+                
+                WeatherInfoRow(
+                    icon = Icons.Default.Opacity,
+                    label = stringResources.humidity,
+                    value = "${weather.main.humidity}%"
+                )
+                
+                WeatherInfoRow(
+                    icon = Icons.Default.Air,
+                    label = stringResources.windSpeed,
+                    value = "${weather.wind.speed} m/s"
+                )
+                
+                WeatherInfoRow(
+                    icon = Icons.Default.Speed,
+                    label = stringResources.pressure,
+                    value = "${weather.main.pressure} hPa"
+                )
+                
+                WeatherInfoRow(
+                    icon = Icons.Default.Cloud,
+                    label = stringResources.cloudiness,
+                    value = "${weather.clouds.all}%"
+                )
+                
+                if (weather.visibility > 0) {
+                    WeatherInfoRow(
+                        icon = Icons.Default.Visibility,
+                        label = stringResources.visibility,
+                        value = "${weather.visibility / 1000} km"
+                    )
+                }
+                
+                // Время восхода и заката
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    WeatherInfoRow(
+                        icon = Icons.Default.WbSunny,
+                        label = stringResources.sunrise,
+                        value = formatTime(weather.sys.sunrise),
+                        modifier = Modifier.weight(1f)
+                    )
+                    
+                    Spacer(modifier = Modifier.width(16.dp))
+                    
+                    WeatherInfoRow(
+                        icon = Icons.Default.NightsStay,
+                        label = stringResources.sunset,
+                        value = formatTime(weather.sys.sunset),
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+            }
             
-            Text(
-                text = "${weather.main.temp}°$unit",
-                style = MaterialTheme.typography.displayMedium,
-                color = MaterialTheme.colorScheme.primary
-            )
-            
-            Text(
-                text = feelsLikeText.format(weather.main.feels_like, unit),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-            )
-            
-            Text(
-                text = minMaxText.format(weather.main.temp_min, weather.main.temp_max, unit),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-            )
-            
-            Text(
-                text = weather.weather.firstOrNull()?.description?.capitalize() ?: "",
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-            
-            Spacer(modifier = Modifier.height(8.dp))
-            
-            // Детальная информация
-            WeatherDetailsGrid(
-                weather = weather, 
-                humidityText = humidityText,
-                windSpeedText = windSpeedText,
-                pressureText = pressureText,
-                cloudinessText = cloudinessText,
-                visibilityText = visibilityText
-            )
-            
-            Spacer(modifier = Modifier.height(12.dp))
-            
-            // Время восхода и заката
-            SunriseSunsetRow(
-                weather = weather,
-                sunriseText = sunriseText,
-                sunsetText = sunsetText,
-                modifier = Modifier.padding(vertical = 8.dp)
-            )
+            // Время последнего обновления
+            if (cacheTimestamp != null) {
+                Text(
+                    text = "${stringResources.lastUpdate}: ${formatDateTime(cacheTimestamp)}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 16.dp),
+                    textAlign = TextAlign.Center
+                )
+            }
         }
     }
 }
 
 @Composable
-fun WeatherDetailsGrid(
-    weather: com.example.cf.domain.model.WeatherResponse,
-    humidityText: String,
-    windSpeedText: String,
-    pressureText: String,
-    cloudinessText: String,
-    visibilityText: String
-) {
-    LazyRow(
-        horizontalArrangement = Arrangement.spacedBy(4.dp),
-        contentPadding = PaddingValues(horizontal = 2.dp)
-    ) {
-        item {
-            WeatherInfoItem(
-                icon = Icons.Default.WaterDrop,
-                value = humidityText.format(weather.main.humidity)
-            )
-        }
-        item {
-            WeatherInfoItem(
-                icon = Icons.Default.Air,
-                value = windSpeedText.format(weather.wind.speed)
-            )
-        }
-        item {
-            WeatherInfoItem(
-                icon = Icons.Default.Speed,
-                value = pressureText.format(weather.main.pressure)
-            )
-        }
-        item {
-            WeatherInfoItem(
-                icon = Icons.Default.Cloud,
-                value = cloudinessText.format(weather.clouds.all)
-            )
-        }
-        item {
-            WeatherInfoItem(
-                icon = Icons.Default.Visibility,
-                value = visibilityText.format(weather.visibility / 1000.0)
-            )
-        }
-    }
-}
-
-@Composable
-fun SunriseSunsetRow(
-    weather: com.example.cf.domain.model.WeatherResponse,
-    sunriseText: String,
-    sunsetText: String,
+fun WeatherInfoRow(
+    icon: ImageVector,
+    label: String,
+    value: String,
     modifier: Modifier = Modifier
 ) {
-    val sunrise = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(weather.sys.sunrise * 1000))
-    val sunset = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(weather.sys.sunset * 1000))
-    
     Row(
-        horizontalArrangement = Arrangement.SpaceEvenly,
-        modifier = modifier
+        modifier = modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        Card(
-            modifier = Modifier.weight(1f),
-            shape = RoundedCornerShape(8.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.secondaryContainer
-            )
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(20.dp)
+            )
             Text(
-                text = sunriseText.format(sunrise), 
-                style = MaterialTheme.typography.bodySmall,
-                modifier = Modifier.padding(8.dp),
-                textAlign = TextAlign.Center,
-                color = MaterialTheme.colorScheme.onSecondaryContainer
+                text = label,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
-        
-        Spacer(modifier = Modifier.width(8.dp))
-        
-        Card(
-            modifier = Modifier.weight(1f),
-            shape = RoundedCornerShape(8.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.secondaryContainer
-            )
-        ) {
-            Text(
-                text = sunsetText.format(sunset), 
-                style = MaterialTheme.typography.bodySmall,
-                modifier = Modifier.padding(8.dp),
-                textAlign = TextAlign.Center,
-                color = MaterialTheme.colorScheme.onSecondaryContainer
-            )
-        }
+        Text(
+            text = value,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurface,
+            fontWeight = androidx.compose.ui.text.font.FontWeight.Medium
+        )
     }
 }
 
@@ -639,90 +648,13 @@ fun SunriseSunsetRow(
 fun ForecastSection(
     dailyForecasts: List<ForecastItem>,
     unit: String,
-    forecastTitleText: String
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp)
-    ) {
-        Text(
-            text = forecastTitleText,
-            style = MaterialTheme.typography.titleMedium,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 8.dp),
-            textAlign = TextAlign.Center,
-            color = MaterialTheme.colorScheme.onSurface
-        )
-        
-        LazyRow(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            contentPadding = PaddingValues(horizontal = 4.dp)
-        ) {
-            items(dailyForecasts) { item ->
-                ForecastCard(forecast = item, unit = unit)
-            }
-        }
-    }
-}
-
-@Composable
-fun WeatherInfoItem(
-    icon: ImageVector,
-    value: String,
+    forecastTitleText: String,
     modifier: Modifier = Modifier
 ) {
     Card(
-        modifier = modifier,
-        shape = RoundedCornerShape(8.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
-    ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.padding(8.dp)
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                modifier = Modifier.size(20.dp),
-                tint = MaterialTheme.colorScheme.primary
-            )
-            Spacer(modifier = Modifier.height(2.dp))
-            Text(
-                text = value,
-                style = MaterialTheme.typography.bodySmall,
-                textAlign = TextAlign.Center,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 2
-            )
-        }
-    }
-}
-
-@Composable
-fun ForecastCard(
-    forecast: ForecastItem,
-    unit: String
-) {
-    var visible by remember { mutableStateOf(false) }
-    
-    LaunchedEffect(Unit) {
-        delay(100) // Небольшая задержка для эффекта каскада
-        visible = true
-    }
-    
-    Card(
-        modifier = Modifier
-            .width(140.dp)
-            .height(180.dp)
-            .graphicsLayer {
-                alpha = if (visible) 1f else 0f
-                translationX = if (visible) 0f else 30f
-            }
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp)
             .animateContentSize(
                 animationSpec = spring(
                     dampingRatio = Spring.DampingRatioMediumBouncy,
@@ -737,95 +669,100 @@ fun ForecastCard(
     ) {
         Column(
             modifier = Modifier
-                .padding(8.dp)
-                .fillMaxWidth(),
-            horizontalAlignment = Alignment.CenterHorizontally
+                .fillMaxWidth()
+                .padding(16.dp)
         ) {
-            val dateFormatter = SimpleDateFormat("EEE, MMM d", Locale.getDefault())
-            val date = dateFormatter.format(Date(forecast.dt * 1000))
-
             Text(
-                text = date,
-                style = MaterialTheme.typography.bodySmall,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth(),
-                color = MaterialTheme.colorScheme.onSurface
-            )
-
-            Spacer(modifier = Modifier.height(6.dp))
-
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(8.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer
-                )
-            ) {
-                Text(
-                    text = forecast.weather.firstOrNull()?.main ?: "",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer,
-                    textAlign = TextAlign.Center,
-                    maxLines = 2,
-                    modifier = Modifier.padding(4.dp)
-                )
-            }
-
-            Spacer(modifier = Modifier.height(6.dp))
-
-            forecast.weather.firstOrNull()?.let { weather ->
-                WeatherIcon(
-                    iconCode = weather.icon,
-                    modifier = Modifier.size(40.dp),
-                    contentDescription = weather.description
-                )
-            }
-
-            Spacer(modifier = Modifier.height(6.dp))
-
-            Text(
-                text = "${forecast.main.temp}°$unit",
+                text = forecastTitleText,
                 style = MaterialTheme.typography.titleLarge,
-                color = MaterialTheme.colorScheme.primary
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 12.dp),
+                textAlign = TextAlign.Center
             )
+            
+            LazyRow(
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                contentPadding = PaddingValues(horizontal = 4.dp)
+            ) {
+                items(
+                    items = dailyForecasts,
+                    key = { it.dt }
+                ) { forecast ->
+                    ForecastCard(
+                        forecast = forecast,
+                        unit = unit
+                    )
+                }
+            }
         }
     }
 }
 
-private fun String.capitalize(): String {
-    return this.replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() }
-}
-
 @Composable
-fun AnimatedIconButton(
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-    enabled: Boolean = true,
-    icon: @Composable () -> Unit
+fun ForecastCard(
+    forecast: ForecastItem,
+    unit: String,
+    modifier: Modifier = Modifier
 ) {
-    val interactionSource = remember { MutableInteractionSource() }
-    val isPressed by interactionSource.collectIsPressedAsState()
+    // Оптимизируем вычисления
+    val temperature by remember(forecast.main.temp) { 
+        derivedStateOf { "${forecast.main.temp.toInt()}°$unit" }
+    }
     
-    val scale by animateFloatAsState(
-        targetValue = if (isPressed) 0.9f else 1f,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessLow
-        ),
-        label = "scale"
-    )
-    
-    IconButton(
-        onClick = onClick,
+    val date by remember(forecast.dt) { 
+        derivedStateOf { formatDate(forecast.dt) }
+    }
+
+    Card(
         modifier = modifier
-            .scale(scale)
-            .graphicsLayer {
-                shadowElevation = if (isPressed) 2f else 4f
-            },
-        enabled = enabled,
-        interactionSource = interactionSource
+            .width(120.dp)
+            .animateContentSize(
+                animationSpec = spring(
+                    dampingRatio = Spring.DampingRatioMediumBouncy,
+                    stiffness = Spring.StiffnessLow
+                )
+            ),
+        shape = RoundedCornerShape(12.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant
+        )
     ) {
-        icon()
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Text(
+                text = date,
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center
+            )
+            
+            WeatherIcon(
+                weatherCode = forecast.weather.firstOrNull()?.id ?: 800,
+                modifier = Modifier.size(40.dp)
+            )
+            
+            Text(
+                text = temperature,
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+                fontWeight = androidx.compose.ui.text.font.FontWeight.Medium
+            )
+            
+            Text(
+                text = forecast.weather.firstOrNull()?.description?.capitalize() ?: "",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center
+            )
+        }
     }
 }
 
@@ -841,47 +778,37 @@ fun AnimatedSearchField(
     historyCities: List<String>,
     onHistoryItemClick: (String) -> Unit
 ) {
-    var isFocused by remember { mutableStateOf(false) }
+    var isExpanded by remember { mutableStateOf(false) }
     var showHistory by remember { mutableStateOf(false) }
     
-    val scaleX by animateFloatAsState(
-        targetValue = if (isFocused) 1.02f else 1f,
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+    
+    val scale by animateFloatAsState(
+        targetValue = if (isPressed) 0.95f else 1f,
         animationSpec = spring(
             dampingRatio = Spring.DampingRatioMediumBouncy,
             stiffness = Spring.StiffnessLow
         ),
         label = "scale"
     )
-    
-    Column(modifier = modifier) {
+
+    Box(modifier = modifier) {
         OutlinedTextField(
             value = value,
-            onValueChange = { 
-                onValueChange(it)
-                showHistory = it.isEmpty() && historyCities.isNotEmpty()
-            },
+            onValueChange = onValueChange,
             modifier = Modifier
-                .scale(scaleX)
-                .graphicsLayer {
-                    shadowElevation = if (isFocused) 8f else 2f
-                }
+                .fillMaxWidth()
+                .scale(scale)
                 .onFocusChanged { focusState ->
-                    isFocused = focusState.isFocused
-                    showHistory = focusState.isFocused && value.isEmpty() && historyCities.isNotEmpty()
+                    showHistory = focusState.isFocused && historyCities.isNotEmpty()
                 },
             enabled = enabled,
-            singleLine = true,
             placeholder = {
                 Text(
                     text = placeholderText,
-                    style = MaterialTheme.typography.bodyMedium
-                )
-            },
-            leadingIcon = {
-                Icon(
-                    imageVector = Icons.Default.Search,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             },
             trailingIcon = {
@@ -901,22 +828,25 @@ fun AnimatedSearchField(
                 imeAction = ImeAction.Search
             ),
             keyboardActions = KeyboardActions(
-                onSearch = { 
+                onSearch = {
                     onSearch()
                     showHistory = false
                 }
             ),
+            interactionSource = interactionSource,
             colors = OutlinedTextFieldDefaults.colors(
                 focusedBorderColor = MaterialTheme.colorScheme.primary,
                 unfocusedBorderColor = MaterialTheme.colorScheme.outline,
                 focusedLabelColor = MaterialTheme.colorScheme.primary,
                 unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            ),
+            shape = RoundedCornerShape(12.dp),
+            singleLine = true
         )
         
-        // Выпадающий список истории
+        // История поиска
         AnimatedVisibility(
-            visible = showHistory && historyCities.isNotEmpty(),
+            visible = showHistory,
             enter = fadeIn() + expandVertically(),
             exit = fadeOut() + shrinkVertically()
         ) {
@@ -925,52 +855,98 @@ fun AnimatedSearchField(
                     .fillMaxWidth()
                     .padding(top = 4.dp),
                 shape = RoundedCornerShape(12.dp),
-                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+                elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
                 colors = CardDefaults.cardColors(
                     containerColor = MaterialTheme.colorScheme.surface
                 )
             ) {
                 Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(8.dp)
+                    modifier = Modifier.padding(8.dp)
                 ) {
-                    Text(
-                        text = "Недавние города:",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
-                    )
-                    
-                    Spacer(modifier = Modifier.height(4.dp))
-                    
                     historyCities.take(5).forEach { city ->
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clickable { 
+                                .clickable {
                                     onHistoryItemClick(city)
                                     showHistory = false
                                 }
-                                .padding(horizontal = 8.dp, vertical = 6.dp),
+                                .padding(vertical = 8.dp, horizontal = 12.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Icon(
                                 imageVector = Icons.Default.History,
                                 contentDescription = null,
-                                tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.size(16.dp)
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
                                 text = city,
                                 style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurface
+                                color = MaterialTheme.colorScheme.onSurface,
+                                modifier = Modifier.weight(1f)
                             )
                         }
                     }
                 }
             }
         }
+    }
+}
+
+@Composable
+fun AnimatedIconButton(
+    onClick: () -> Unit,
+    enabled: Boolean = true,
+    modifier: Modifier = Modifier,
+    icon: @Composable () -> Unit
+) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+    
+    val scale by animateFloatAsState(
+        targetValue = if (isPressed && enabled) 0.9f else 1f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessLow
+        ),
+        label = "scale"
+    )
+
+    IconButton(
+        onClick = onClick,
+        enabled = enabled,
+        modifier = modifier.scale(scale),
+        interactionSource = interactionSource
+    ) {
+        icon()
+    }
+}
+
+// Утилитарные функции
+private fun formatTime(timestamp: Long): String {
+    val date = Date(timestamp * 1000)
+    val formatter = SimpleDateFormat("HH:mm", Locale.getDefault())
+    return formatter.format(date)
+}
+
+private fun formatDate(timestamp: Long): String {
+    val date = Date(timestamp * 1000)
+    val formatter = SimpleDateFormat("EEE, dd MMM", Locale.getDefault())
+    return formatter.format(date)
+}
+
+private fun formatDateTime(timestamp: Long): String {
+    val date = Date(timestamp)
+    val formatter = SimpleDateFormat("dd.MM.yyyy HH:mm", Locale.getDefault())
+    return formatter.format(date)
+}
+
+private fun String.capitalize(): String {
+    return if (isNotEmpty()) {
+        this[0].uppercase() + substring(1)
+    } else {
+        this
     }
 } 
