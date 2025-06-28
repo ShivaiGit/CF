@@ -29,10 +29,13 @@ import android.content.Intent
 import com.example.cf.BuildConfig
 import dagger.hilt.android.AndroidEntryPoint
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.activity.viewModels
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     private var showSettingsScreen = mutableStateOf(false)
+    
+    private val viewModel: WeatherViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
@@ -46,7 +49,6 @@ class MainActivity : ComponentActivity() {
             Log.d("MainActivity", "Before setContent")
             setContent {
                 Log.d("MainActivity", "Inside setContent")
-                val viewModel: WeatherViewModel = hiltViewModel()
                 val state = viewModel.state.collectAsStateWithLifecycle().value
                 CFTheme(darkTheme = state.isDarkTheme) {
                     Surface(
@@ -78,7 +80,6 @@ class MainActivity : ComponentActivity() {
 
             val fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
             lifecycleScope.launchWhenStarted {
-                val viewModel: WeatherViewModel = hiltViewModel()
                 for (event in viewModel.locationEvents) {
                     when (event) {
                         is LocationEvent.RequestLocation -> {
