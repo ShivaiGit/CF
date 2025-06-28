@@ -8,8 +8,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
-import com.example.cf.data.WeatherRepository
-import com.example.cf.data.WeatherPreferences
 import com.example.cf.ui.theme.CFTheme
 import com.example.cf.ui.weather.WeatherScreen
 import com.example.cf.ui.weather.WeatherViewModel
@@ -26,7 +24,6 @@ import com.example.cf.ui.weather.LocationEvent
 import com.example.cf.ui.weather.SettingsScreen
 import androidx.compose.runtime.mutableStateOf
 import android.content.Intent
-import com.example.cf.BuildConfig
 import dagger.hilt.android.AndroidEntryPoint
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.activity.viewModels

@@ -9,7 +9,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.example.cf.data.ForecastItem
+import com.example.cf.domain.model.ForecastItem
 import java.text.SimpleDateFormat
 import java.util.*
 import androidx.compose.foundation.background

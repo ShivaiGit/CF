@@ -2,10 +2,10 @@ package com.example.cf.ui.weather
 
 import app.cash.turbine.test
 import com.example.cf.core.Result
-import com.example.cf.data.ForecastResponse
+import com.example.cf.domain.model.ForecastResponse
 import com.example.cf.data.WeatherPreferences
-import com.example.cf.data.WeatherRepository
-import com.example.cf.data.WeatherResponse
+import com.example.cf.domain.repository.WeatherRepository
+import com.example.cf.domain.model.WeatherResponse
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
@@ -255,12 +255,12 @@ class WeatherViewModelTest {
     private fun createMockWeatherResponse(city: String): WeatherResponse {
         return WeatherResponse(
             weather = listOf(
-                com.example.cf.data.Weather("Clear", "clear sky", "01d")
+                com.example.cf.domain.model.Weather("Clear", "clear sky", "01d")
             ),
-            main = com.example.cf.data.Main(20.0, 18.0, 15.0, 25.0, 65, 1013),
-            wind = com.example.cf.data.Wind(5.0),
-            sys = com.example.cf.data.Sys(1640995200, 1641038400),
-            clouds = com.example.cf.data.Clouds(20),
+            main = com.example.cf.domain.model.Main(20.0, 18.0, 15.0, 25.0, 65, 1013),
+            wind = com.example.cf.domain.model.Wind(5.0),
+            sys = com.example.cf.domain.model.Sys(1640995200, 1641038400),
+            clouds = com.example.cf.domain.model.Clouds(20),
             visibility = 10000,
             name = city
         )
@@ -269,13 +269,13 @@ class WeatherViewModelTest {
     private fun createMockForecastResponse(): ForecastResponse {
         return ForecastResponse(
             list = listOf(
-                com.example.cf.data.ForecastItem(
+                com.example.cf.domain.model.ForecastItem(
                     dt = 1640995200,
-                    main = com.example.cf.data.Main(20.0, 18.0, 15.0, 25.0, 65, 1013),
+                    main = com.example.cf.domain.model.Main(20.0, 18.0, 15.0, 25.0, 65, 1013),
                     weather = listOf(
-                        com.example.cf.data.Weather("Clear", "clear sky", "01d")
+                        com.example.cf.domain.model.Weather("Clear", "clear sky", "01d")
                     ),
-                    wind = com.example.cf.data.Wind(5.0)
+                    wind = com.example.cf.domain.model.Wind(5.0)
                 )
             )
         )
