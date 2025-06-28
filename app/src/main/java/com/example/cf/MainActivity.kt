@@ -43,6 +43,7 @@ class MainActivity : ComponentActivity() {
             val preferences: WeatherPreferences
             val viewModel: WeatherViewModel
             try {
+                Log.d("MainActivity", "API Key: ${BuildConfig.WEATHER_API_KEY}")
                 repository = WeatherRepository(BuildConfig.WEATHER_API_KEY)
                 Log.d("MainActivity", "Repository created")
                 preferences = WeatherPreferences(this)
