@@ -23,7 +23,6 @@ import kotlinx.coroutines.launch
 import com.example.cf.ui.weather.LocationEvent
 import com.example.cf.ui.weather.SettingsScreen
 import androidx.compose.runtime.mutableStateOf
-import android.content.Intent
 import dagger.hilt.android.AndroidEntryPoint
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.activity.viewModels
@@ -64,14 +63,7 @@ class MainActivity : ComponentActivity() {
                         } else {
                             WeatherScreen(
                                 viewModel = viewModel,
-                                onSettingsClick = { showSettingsScreen.value = true },
-                                onShareWeather = { shareText ->
-                                    val intent = Intent(Intent.ACTION_SEND).apply {
-                                        type = "text/plain"
-                                        putExtra(Intent.EXTRA_TEXT, shareText)
-                                    }
-                                    startActivity(Intent.createChooser(intent, "Поделиться погодой"))
-                                }
+                                onSettingsClick = { showSettingsScreen.value = true }
                             )
                         }
                     }

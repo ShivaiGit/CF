@@ -134,8 +134,7 @@ fun LoadingAnimation(
 fun WeatherScreen(
     viewModel: WeatherViewModel,
     modifier: Modifier = Modifier,
-    onSettingsClick: () -> Unit = {},
-    onShareWeather: (String) -> Unit = {}
+    onSettingsClick: () -> Unit = {}
 ) {
     Log.d("WeatherScreen", "Composing WeatherScreen")
     
@@ -154,9 +153,6 @@ fun WeatherScreen(
     val settingsText = stringResource(R.string.settings)
     val outdatedDataText = stringResource(R.string.outdated_data)
     val lastUpdateText = stringResource(R.string.last_update)
-    val celsiusText = stringResource(R.string.unit_celsius)
-    val fahrenheitText = stringResource(R.string.unit_fahrenheit)
-    val shareWeatherText = stringResource(R.string.share_weather)
     val feelsLikeText = stringResource(R.string.feels_like)
     val minMaxText = stringResource(R.string.min_max)
     val humidityText = stringResource(R.string.humidity)
@@ -328,12 +324,8 @@ fun WeatherScreen(
                             unit = unit,
                             isCacheShown = isCacheShown,
                             cacheTimestamp = cacheTimestamp,
-                            onShareWeather = onShareWeather,
                             outdatedDataText = outdatedDataText,
                             lastUpdateText = lastUpdateText,
-                            celsiusText = celsiusText,
-                            fahrenheitText = fahrenheitText,
-                            shareWeatherText = shareWeatherText,
                             feelsLikeText = feelsLikeText,
                             minMaxText = minMaxText,
                             humidityText = humidityText,
@@ -410,12 +402,8 @@ fun WeatherCard(
     unit: String,
     isCacheShown: Boolean,
     cacheTimestamp: Long?,
-    onShareWeather: (String) -> Unit,
     outdatedDataText: String,
     lastUpdateText: String,
-    celsiusText: String,
-    fahrenheitText: String,
-    shareWeatherText: String,
     feelsLikeText: String,
     minMaxText: String,
     humidityText: String,
@@ -483,36 +471,6 @@ fun WeatherCard(
                 }
             }
             
-            // Кнопка поделиться
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.End
-            ) {
-                val unitStr = if (unit == "C") celsiusText else fahrenheitText
-                IconButton(
-                    onClick = {
-                        val desc = weather.weather.firstOrNull()?.description?.capitalize() ?: ""
-                        val temp = weather.main.temp
-                        val city = weather.name
-                        val shareText = city + ": " + temp + unitStr + ", " + desc
-                        onShareWeather(shareText)
-                    },
-                    modifier = Modifier
-                        .size(32.dp)
-                        .background(
-                            color = MaterialTheme.colorScheme.primaryContainer,
-                            shape = RoundedCornerShape(8.dp)
-                        )
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Share,
-                        contentDescription = shareWeatherText,
-                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                        modifier = Modifier.size(18.dp)
-                    )
-                }
-            }
-            
             // Основная информация о погоде
             Text(
                 text = weather.name,
@@ -560,7 +518,7 @@ fun WeatherCard(
             
             // Детальная информация
             WeatherDetailsGrid(
-                weather = weather,
+                weather = weather, 
                 humidityText = humidityText,
                 windSpeedText = windSpeedText,
                 pressureText = pressureText,
@@ -568,13 +526,14 @@ fun WeatherCard(
                 visibilityText = visibilityText
             )
             
-            Spacer(modifier = Modifier.height(6.dp))
+            Spacer(modifier = Modifier.height(12.dp))
             
             // Время восхода и заката
             SunriseSunsetRow(
                 weather = weather,
                 sunriseText = sunriseText,
-                sunsetText = sunsetText
+                sunsetText = sunsetText,
+                modifier = Modifier.padding(vertical = 8.dp)
             )
         }
     }
@@ -590,8 +549,8 @@ fun WeatherDetailsGrid(
     visibilityText: String
 ) {
     LazyRow(
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        contentPadding = PaddingValues(horizontal = 4.dp)
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        contentPadding = PaddingValues(horizontal = 2.dp)
     ) {
         item {
             WeatherInfoItem(
@@ -630,14 +589,15 @@ fun WeatherDetailsGrid(
 fun SunriseSunsetRow(
     weather: com.example.cf.domain.model.WeatherResponse,
     sunriseText: String,
-    sunsetText: String
+    sunsetText: String,
+    modifier: Modifier = Modifier
 ) {
     val sunrise = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(weather.sys.sunrise * 1000))
     val sunset = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(weather.sys.sunset * 1000))
     
     Row(
         horizontalArrangement = Arrangement.SpaceEvenly,
-        modifier = Modifier.fillMaxWidth()
+        modifier = modifier
     ) {
         Card(
             modifier = Modifier.weight(1f),
@@ -715,28 +675,29 @@ fun WeatherInfoItem(
 ) {
     Card(
         modifier = modifier,
-        shape = RoundedCornerShape(12.dp),
+        shape = RoundedCornerShape(8.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.padding(12.dp)
+            modifier = Modifier.padding(8.dp)
         ) {
             Icon(
                 imageVector = icon,
                 contentDescription = null,
-                modifier = Modifier.size(24.dp),
+                modifier = Modifier.size(20.dp),
                 tint = MaterialTheme.colorScheme.primary
             )
-            Spacer(modifier = Modifier.height(4.dp))
+            Spacer(modifier = Modifier.height(2.dp))
             Text(
                 text = value,
                 style = MaterialTheme.typography.bodySmall,
                 textAlign = TextAlign.Center,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 2
             )
         }
     }

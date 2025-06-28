@@ -73,8 +73,8 @@ class WeatherViewModel @Inject constructor(
                 Log.d("WeatherViewModel", "Loaded city: '$lastCity'")
                 if (lastCity.isNotBlank()) {
                     _state.update { it.copy(city = lastCity) }
-                    // Не загружаем погоду автоматически при инициализации
-                    // fetchWeather(isAutoLoad = true)
+                    // Автоматически загружаем погоду для последнего города
+                    fetchWeather(isAutoLoad = true)
                 }
             } catch (e: Exception) {
                 Log.e("WeatherViewModel", "Error loading saved city", e)
