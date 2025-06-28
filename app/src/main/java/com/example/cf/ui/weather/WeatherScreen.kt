@@ -149,25 +149,43 @@ fun WeatherScreen(
     // Оптимизируем вычисления с помощью derivedStateOf
     val unit by remember { derivedStateOf { if (state.isCelsius) "C" else "F" } }
     
-    // Получаем строки ресурсов в начале функции - оптимизация
-    val stringResources = remember {
+    // Получаем строки ресурсов в composable контексте
+    val myLocation = stringResource(R.string.my_location)
+    val settings = stringResource(R.string.settings)
+    val outdatedData = stringResource(R.string.outdated_data)
+    val lastUpdate = stringResource(R.string.last_update)
+    val feelsLike = stringResource(R.string.feels_like)
+    val minMax = stringResource(R.string.min_max)
+    val humidity = stringResource(R.string.humidity)
+    val windSpeed = stringResource(R.string.wind_speed)
+    val pressure = stringResource(R.string.pressure)
+    val cloudiness = stringResource(R.string.cloudiness)
+    val visibility = stringResource(R.string.visibility)
+    val sunrise = stringResource(R.string.sunrise)
+    val sunset = stringResource(R.string.sunset)
+    val forecastTitle = stringResource(R.string.forecast_title)
+    val placeholder = stringResource(R.string.enter_city_name)
+    val clear = stringResource(R.string.clear)
+    
+    // Создаем объект с ресурсами
+    val stringResources = remember(myLocation, settings, outdatedData, lastUpdate, feelsLike, minMax, humidity, windSpeed, pressure, cloudiness, visibility, sunrise, sunset, forecastTitle, placeholder, clear) {
         StringResources(
-            myLocation = stringResource(R.string.my_location),
-            settings = stringResource(R.string.settings),
-            outdatedData = stringResource(R.string.outdated_data),
-            lastUpdate = stringResource(R.string.last_update),
-            feelsLike = stringResource(R.string.feels_like),
-            minMax = stringResource(R.string.min_max),
-            humidity = stringResource(R.string.humidity),
-            windSpeed = stringResource(R.string.wind_speed),
-            pressure = stringResource(R.string.pressure),
-            cloudiness = stringResource(R.string.cloudiness),
-            visibility = stringResource(R.string.visibility),
-            sunrise = stringResource(R.string.sunrise),
-            sunset = stringResource(R.string.sunset),
-            forecastTitle = stringResource(R.string.forecast_title),
-            placeholder = stringResource(R.string.enter_city_name),
-            clear = stringResource(R.string.clear)
+            myLocation = myLocation,
+            settings = settings,
+            outdatedData = outdatedData,
+            lastUpdate = lastUpdate,
+            feelsLike = feelsLike,
+            minMax = minMax,
+            humidity = humidity,
+            windSpeed = windSpeed,
+            pressure = pressure,
+            cloudiness = cloudiness,
+            visibility = visibility,
+            sunrise = sunrise,
+            sunset = sunset,
+            forecastTitle = forecastTitle,
+            placeholder = placeholder,
+            clear = clear
         )
     }
 
@@ -275,8 +293,8 @@ fun WeatherScreen(
                             onSearch = viewModel::fetchWeather,
                             modifier = Modifier.weight(1f),
                             enabled = !state.isLoading,
-                            placeholderText = stringResources.placeholder,
-                            clearText = stringResources.clear,
+                            placeholderText = placeholder,
+                            clearText = clear,
                             historyCities = historyCities,
                             onHistoryItemClick = { viewModel.selectCityFromHistory(it) }
                         )
@@ -294,7 +312,7 @@ fun WeatherScreen(
                             icon = {
                                 Icon(
                                     imageVector = Icons.Default.LocationOn,
-                                    contentDescription = stringResources.myLocation,
+                                    contentDescription = myLocation,
                                     tint = MaterialTheme.colorScheme.onPrimaryContainer
                                 )
                             }
@@ -339,17 +357,18 @@ fun WeatherScreen(
             
             // Показываем прогноз только если он есть
             item(key = "forecast_section") {
+                val forecasts = dailyForecasts
                 AnimatedVisibility(
-                    visible = !dailyForecasts.isNullOrEmpty(),
+                    visible = !forecasts.isNullOrEmpty(),
                     enter = fadeIn(animationSpec = tween(700)) + expandVertically(animationSpec = tween(700)),
                     exit = fadeOut(animationSpec = tween(300)) + shrinkVertically(animationSpec = tween(300))
                 ) {
-                    if (!dailyForecasts.isNullOrEmpty()) {
-                        Log.d("WeatherScreen", "Showing forecast with ${dailyForecasts.size} items")
+                    if (!forecasts.isNullOrEmpty()) {
+                        Log.d("WeatherScreen", "Showing forecast with ${forecasts.size} items")
                         ForecastSection(
-                            dailyForecasts = dailyForecasts, 
+                            dailyForecasts = forecasts, 
                             unit = unit,
-                            forecastTitleText = stringResources.forecastTitle
+                            forecastTitleText = forecastTitle
                         )
                     }
                 }
@@ -383,7 +402,7 @@ fun WeatherScreen(
             ) {
                 Icon(
                     imageVector = Icons.Default.Settings,
-                    contentDescription = stringResources.settings,
+                    contentDescription = settings,
                     modifier = Modifier.size(24.dp)
                 )
             }
@@ -394,7 +413,7 @@ fun WeatherScreen(
 }
 
 // Класс для хранения строковых ресурсов - оптимизация
-private data class StringResources(
+data class StringResources(
     val myLocation: String,
     val settings: String,
     val outdatedData: String,
@@ -415,7 +434,7 @@ private data class StringResources(
 
 @Composable
 fun WeatherCard(
-    weather: Weather,
+    weather: com.example.cf.domain.model.WeatherResponse,
     unit: String,
     isCacheShown: Boolean,
     cacheTimestamp: Long?,
@@ -427,13 +446,13 @@ fun WeatherCard(
         derivedStateOf { "${weather.main.temp.toInt()}°$unit" }
     }
     
-    val feelsLike by remember(weather.main.feelsLike) { 
-        derivedStateOf { "${weather.main.feelsLike.toInt()}°$unit" }
+    val feelsLike by remember(weather.main.feels_like) { 
+        derivedStateOf { "${weather.main.feels_like.toInt()}°$unit" }
     }
     
-    val minMax by remember(weather.main.tempMin, weather.main.tempMax) { 
+    val minMax by remember(weather.main.temp_min, weather.main.temp_max) { 
         derivedStateOf { 
-            "${weather.main.tempMin.toInt()}°$unit / ${weather.main.tempMax.toInt()}°$unit" 
+            "${weather.main.temp_min.toInt()}°$unit / ${weather.main.temp_max.toInt()}°$unit" 
         }
     }
 

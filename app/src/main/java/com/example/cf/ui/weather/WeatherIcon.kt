@@ -5,6 +5,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import coil.compose.AsyncImage
 import coil.request.CachePolicy
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
 
 @Composable
 fun WeatherIcon(
@@ -65,20 +67,20 @@ fun WeatherIconMaterial(
         derivedStateOf {
             when (weatherCode) {
                 // Грозы
-                in 200..232 -> androidx.compose.material.icons.Icons.Default.Thunderstorm
+                in 200..232 -> Icons.Default.Thunderstorm
                 // Морось
-                in 300..321 -> androidx.compose.material.icons.Icons.Default.Grain
+                in 300..321 -> Icons.Default.Grain
                 // Дождь
-                in 500..531 -> androidx.compose.material.icons.Icons.Default.Opacity
+                in 500..531 -> Icons.Default.Opacity
                 // Снег
-                in 600..622 -> androidx.compose.material.icons.Icons.Default.AcUnit
+                in 600..622 -> Icons.Default.AcUnit
                 // Туман
-                in 701..781 -> androidx.compose.material.icons.Icons.Default.Cloud
+                in 701..781 -> Icons.Default.Cloud
                 // Ясно
-                800 -> androidx.compose.material.icons.Icons.Default.WbSunny
+                800 -> Icons.Default.WbSunny
                 // Облачно
-                in 801..804 -> androidx.compose.material.icons.Icons.Default.Cloud
-                else -> androidx.compose.material.icons.Icons.Default.WbSunny
+                in 801..804 -> Icons.Default.Cloud
+                else -> Icons.Default.WbSunny
             }
         }
     }

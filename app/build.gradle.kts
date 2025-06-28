@@ -80,7 +80,7 @@ android {
             "-opt-in=androidx.compose.material3.ExperimentalMaterial3Api",
             "-opt-in=androidx.compose.material.ExperimentalMaterialApi",
             "-Xjvm-default=all",
-            "-Xuse-k2"
+            "-language-version=2.0"
         )
     }
     buildFeatures {

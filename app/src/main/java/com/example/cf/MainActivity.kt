@@ -29,13 +29,12 @@ import androidx.activity.viewModels
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.lifecycle.Lifecycle
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.collectLatest
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     
     // Оптимизируем состояние с помощью ленивой инициализации
-    private var showSettingsScreen by mutableStateOf(false)
+    private var showSettingsScreen = mutableStateOf(false)
     
     // Ленивая инициализация ViewModel
     private val viewModel: WeatherViewModel by viewModels()
@@ -71,19 +70,19 @@ class MainActivity : ComponentActivity() {
                         color = MaterialTheme.colorScheme.background
                     ) {
                         // Оптимизируем состояние с помощью remember
-                        val state by viewModel.state.collectAsStateWithLifecycle()
+                        val state = viewModel.state.collectAsStateWithLifecycle().value
                         Log.d("MainActivity", "State collected: city=${state.city}, isLoading=${state.isLoading}")
                         
-                        if (showSettingsScreen) {
+                        if (showSettingsScreen.value) {
                             SettingsScreen(
                                 isCelsius = state.isCelsius,
                                 onUnitChange = { viewModel.toggleTemperatureUnit() },
-                                onBack = { showSettingsScreen = false }
+                                onBack = { showSettingsScreen.value = false }
                             )
                         } else {
                             WeatherScreen(
                                 viewModel = viewModel,
-                                onSettingsClick = { showSettingsScreen = true }
+                                onSettingsClick = { showSettingsScreen.value = true }
                             )
                         }
                     }
@@ -110,8 +109,8 @@ class MainActivity : ComponentActivity() {
                     repeatOnLifecycle(Lifecycle.State.STARTED) {
                         Log.d("MainActivity", "Location lifecycle started")
                         
-                        // Оптимизируем обработку событий с помощью collectLatest
-                        viewModel.locationEvents.collectLatest { event ->
+                        // Обрабатываем события местоположения с помощью for цикла
+                        for (event in viewModel.locationEvents) {
                             Log.d("MainActivity", "Received location event: $event")
                             
                             when (event) {
@@ -176,41 +175,25 @@ class MainActivity : ComponentActivity() {
             ).addOnSuccessListener { location ->
                 if (location != null) {
                     Log.d("MainActivity", "Location received: ${location.latitude}, ${location.longitude}")
-                    lifecycleScope.launch {
-                        // Отправляем результат в ViewModel
-                        viewModel.locationEvents.trySend(
-                            LocationEvent.LocationResult(location.latitude, location.longitude)
-                        )
-                    }
+                    // Используем метод ViewModel для обработки местоположения
+                    viewModel.onLocationReceived(location.latitude, location.longitude)
                 } else {
                     Log.w("MainActivity", "Location is null")
-                    lifecycleScope.launch {
-                        viewModel.locationEvents.trySend(
-                            LocationEvent.Error("Не удалось получить координаты")
-                        )
-                    }
+                    viewModel.onLocationError("Не удалось получить координаты")
                 }
             }.addOnFailureListener { exception ->
                 Log.e("MainActivity", "Location request failed", exception)
-                lifecycleScope.launch {
-                    viewModel.locationEvents.trySend(
-                        LocationEvent.Error("Ошибка получения координат: ${exception.message}")
-                    )
-                }
+                viewModel.onLocationError("Ошибка получения координат: ${exception.message}")
             }
         } catch (e: Exception) {
             Log.e("MainActivity", "Error requesting location", e)
-            lifecycleScope.launch {
-                viewModel.locationEvents.trySend(
-                    LocationEvent.Error("Ошибка запроса местоположения")
-                )
-            }
+            viewModel.onLocationError("Ошибка запроса местоположения")
         }
     }
 
     override fun onRequestPermissionsResult(
         requestCode: Int,
-        permissions: Array<out String>,
+        permissions: Array<String>,
         grantResults: IntArray
     ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
@@ -224,11 +207,7 @@ class MainActivity : ComponentActivity() {
                     requestLocation()
                 } else {
                     Log.w("MainActivity", "Location permission denied")
-                    lifecycleScope.launch {
-                        viewModel.locationEvents.trySend(
-                            LocationEvent.Error("Разрешение на местоположение не предоставлено")
-                        )
-                    }
+                    viewModel.onLocationError("Разрешение на местоположение не предоставлено")
                 }
             }
         }

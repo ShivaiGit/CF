@@ -213,4 +213,3 @@
 # Оптимизации для R8
 -allowaccessmodification
 -mergeinterfacesaggressively
--allowobfuscation

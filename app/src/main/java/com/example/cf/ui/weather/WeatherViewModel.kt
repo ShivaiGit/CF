@@ -294,6 +294,60 @@ class WeatherViewModel @Inject constructor(
         }
     }
 
+    // Методы для обработки событий местоположения
+    fun onLocationReceived(lat: Double, lon: Double) {
+        Log.d("WeatherViewModel", "Location received: $lat, $lon")
+        viewModelScope.launch {
+            try {
+                val units = if (_state.value.isCelsius) "metric" else "imperial"
+                _state.update { 
+                    it.copy(
+                        weatherResult = Result.Loading,
+                        forecastResult = Result.Loading
+                    ) 
+                }
+                
+                val currentDeferred = async { repository.getCurrentWeatherByCoords(lat, lon, units) }
+                val forecastDeferred = async { repository.getForecastByCoords(lat, lon, units) }
+                
+                val current = currentDeferred.await()
+                val forecast = forecastDeferred.await()
+                
+                _state.update {
+                    it.copy(
+                        weatherResult = Result.Success(current),
+                        forecastResult = Result.Success(forecast),
+                        city = current.name
+                    )
+                }
+                preferences.saveCity(current.name)
+                preferences.addCityToHistory(current.name)
+                
+            } catch (e: Exception) {
+                Log.e("WeatherViewModel", "Error fetching weather by location", e)
+                val errorMessage = ErrorHandler.handleException(e)
+                _state.update {
+                    it.copy(
+                        weatherResult = Result.Error(e),
+                        forecastResult = Result.Error(e)
+                    )
+                }
+            }
+        }
+    }
+
+    fun onLocationError(message: String) {
+        Log.d("WeatherViewModel", "Location error: $message")
+        viewModelScope.launch {
+            _state.update { 
+                it.copy(
+                    weatherResult = Result.Error(Exception(message)),
+                    forecastResult = Result.Error(Exception(message))
+                ) 
+            }
+        }
+    }
+
     override fun onCleared() {
         super.onCleared()
         _locationEvents.close()
