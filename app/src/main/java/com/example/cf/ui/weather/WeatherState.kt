@@ -1,7 +1,7 @@
 package com.example.cf.ui.weather
 
-import com.example.cf.data.WeatherResponse
-import com.example.cf.data.ForecastResponse
+import com.example.cf.domain.model.WeatherResponse
+import com.example.cf.domain.model.ForecastResponse
 import com.example.cf.core.Result
 
 data class WeatherState(

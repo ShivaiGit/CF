@@ -3,7 +3,7 @@ package com.example.cf.ui.weather
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.cf.data.WeatherRepository
+import com.example.cf.domain.repository.WeatherRepository
 import com.example.cf.data.WeatherPreferences
 import kotlinx.coroutines.async
 import kotlinx.coroutines.channels.Channel
@@ -12,8 +12,8 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import com.google.gson.Gson
 import com.google.gson.JsonSyntaxException
-import com.example.cf.data.WeatherResponse
-import com.example.cf.data.ForecastResponse
+import com.example.cf.domain.model.WeatherResponse
+import com.example.cf.domain.model.ForecastResponse
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import com.example.cf.core.Result

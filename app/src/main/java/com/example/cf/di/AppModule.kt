@@ -2,9 +2,12 @@ package com.example.cf.di
 
 import android.content.Context
 import com.example.cf.BuildConfig
-import com.example.cf.data.WeatherApiService
+import com.example.cf.data.remote.WeatherApiService
+import com.example.cf.data.repository.WeatherRepositoryImpl
 import com.example.cf.data.WeatherPreferences
-import com.example.cf.data.WeatherRepository
+import com.example.cf.domain.repository.WeatherRepository
+import com.example.cf.domain.usecase.GetWeatherUseCase
+import com.example.cf.domain.usecase.GetForecastUseCase
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -45,12 +48,24 @@ object AppModule {
         apiService: WeatherApiService,
         apiKey: String
     ): WeatherRepository {
-        return WeatherRepository(apiKey, apiService)
+        return WeatherRepositoryImpl(apiKey, apiService)
     }
 
     @Provides
     @Singleton
     fun provideApiKey(): String {
         return BuildConfig.WEATHER_API_KEY
+    }
+
+    @Provides
+    @Singleton
+    fun provideGetWeatherUseCase(repository: WeatherRepository): GetWeatherUseCase {
+        return GetWeatherUseCase(repository)
+    }
+
+    @Provides
+    @Singleton
+    fun provideGetForecastUseCase(repository: WeatherRepository): GetForecastUseCase {
+        return GetForecastUseCase(repository)
     }
 } 
