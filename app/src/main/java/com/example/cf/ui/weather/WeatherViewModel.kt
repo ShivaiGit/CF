@@ -49,12 +49,21 @@ class WeatherViewModel @Inject constructor(
 
     init {
         Log.d("WeatherViewModel", "Initializing ViewModel")
-        loadTheme()
-        loadSavedCity()
-        viewModelScope.launch {
-            preferences.historyCities.collect {
-                _historyCities.value = it
+        try {
+            loadTheme()
+            loadSavedCity()
+            viewModelScope.launch {
+                try {
+                    preferences.historyCities.collect {
+                        Log.d("WeatherViewModel", "History cities updated: $it")
+                        _historyCities.value = it
+                    }
+                } catch (e: Exception) {
+                    Log.e("WeatherViewModel", "Error collecting history cities", e)
+                }
             }
+        } catch (e: Exception) {
+            Log.e("WeatherViewModel", "Error in init", e)
         }
     }
 
@@ -62,10 +71,11 @@ class WeatherViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 val lastCity = preferences.lastCity.first()
-                Log.d("WeatherViewModel", "Loaded city: $lastCity")
+                Log.d("WeatherViewModel", "Loaded city: '$lastCity'")
                 if (lastCity.isNotBlank()) {
                     _state.update { it.copy(city = lastCity) }
-                    fetchWeather(isAutoLoad = true)
+                    // Не загружаем погоду автоматически при инициализации
+                    // fetchWeather(isAutoLoad = true)
                 }
             } catch (e: Exception) {
                 Log.e("WeatherViewModel", "Error loading saved city", e)
@@ -75,6 +85,7 @@ class WeatherViewModel @Inject constructor(
     }
 
     fun onCityChange(newCity: String) {
+        Log.d("WeatherViewModel", "City changed to: '$newCity'")
         _state.update { it.copy(city = newCity) }
     }
 
@@ -93,6 +104,8 @@ class WeatherViewModel @Inject constructor(
     fun fetchWeather(isAutoLoad: Boolean = false) {
         val cityToFetch = _state.value.city
         val units = if (_state.value.isCelsius) "metric" else "imperial"
+        Log.d("WeatherViewModel", "fetchWeather called for city: '$cityToFetch', isAutoLoad: $isAutoLoad")
+        
         if (cityToFetch.isBlank()) {
             Log.d("WeatherViewModel", "Attempted to fetch weather with blank city")
             return
@@ -168,6 +181,7 @@ class WeatherViewModel @Inject constructor(
                         _isCacheShown.value = true
                         _cacheTimestamp.value = cachedTimestampValue
                         cacheUsed = true
+                        Log.d("WeatherViewModel", "Using cached data")
                     }
                 } catch (ex: Exception) {
                     Log.e("WeatherViewModel", "Error loading cache", ex)

@@ -5,8 +5,8 @@ import com.example.cf.domain.model.ForecastResponse
 import com.example.cf.core.Result
 
 data class WeatherState(
-    val weatherResult: Result<WeatherResponse> = Result.Loading,
-    val forecastResult: Result<ForecastResponse> = Result.Loading,
+    val weatherResult: Result<WeatherResponse> = Result.Idle,
+    val forecastResult: Result<ForecastResponse> = Result.Idle,
     val city: String = "",
     val isDarkTheme: Boolean = false,
     val isCelsius: Boolean = true

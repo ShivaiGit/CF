@@ -79,18 +79,24 @@ fun WeatherScreen(
     onSettingsClick: () -> Unit = {},
     onShareWeather: (String) -> Unit = {}
 ) {
-    Log.d("WeatherScreen", "Composing WeatherScreen, city: ${viewModel.state.value.city}, error: ${viewModel.state.value.error}")
+    Log.d("WeatherScreen", "Composing WeatherScreen")
+    
+    // Собираем все состояния в одном месте для оптимизации
     val state by viewModel.state.collectAsStateWithLifecycle()
-    val density = LocalDensity.current
-    val unit = if (state.isCelsius) "C" else "F"
     val isCacheShown by viewModel.isCacheShown.collectAsStateWithLifecycle()
     val cacheTimestamp by viewModel.cacheTimestamp.collectAsStateWithLifecycle()
     val historyCities by viewModel.historyCities.collectAsStateWithLifecycle()
+    
+    Log.d("WeatherScreen", "States collected: city=${state.city}, isLoading=${state.isLoading}, weather=${state.weather != null}")
+    
+    val density = LocalDensity.current
+    val unit = if (state.isCelsius) "C" else "F"
     val configuration = LocalConfiguration.current
     val screenHeight = configuration.screenHeightDp.dp
 
-    // Получаем список уникальных дней для прогноза
-    val dailyForecasts = remember(state.forecast) {
+    // Оптимизируем remember для dailyForecasts
+    val dailyForecasts = remember(state.forecast?.list) {
+        Log.d("WeatherScreen", "Calculating dailyForecasts")
         state.forecast?.list?.groupBy { item ->
             val date = Date(item.dt * 1000)
             val calendar = Calendar.getInstance().apply {
@@ -111,6 +117,8 @@ fun WeatherScreen(
             } ?: items.first()
         }?.take(5)
     }
+
+    Log.d("WeatherScreen", "dailyForecasts size: ${dailyForecasts?.size}")
 
     Column(
         modifier = modifier
@@ -196,20 +204,18 @@ fun WeatherScreen(
             }
         }
         Spacer(modifier = Modifier.height(2.dp))
-        AnimatedVisibility(
-            visible = state.isLoading,
-            enter = fadeIn() + expandVertically(),
-            exit = fadeOut() + shrinkVertically()
-        ) {
+        
+        // Показываем загрузку только если действительно загружаемся и город не пустой
+        if (state.isLoading && state.city.isNotBlank()) {
+            Log.d("WeatherScreen", "Showing loading animation")
             LoadingAnimation(
                 modifier = Modifier.padding(4.dp)
             )
         }
-        AnimatedVisibility(
-            visible = state.weather != null,
-            enter = fadeIn() + expandVertically(),
-            exit = fadeOut() + shrinkVertically()
-        ) {
+        
+        // Показываем погоду только если она есть
+        state.weather?.let { weather ->
+            Log.d("WeatherScreen", "Showing weather for: ${weather.name}")
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -230,151 +236,148 @@ fun WeatherScreen(
                         textAlign = TextAlign.Center
                     )
                 }
-                state.weather?.let { weather ->
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Spacer(modifier = Modifier.weight(1f))
+                    val unitStr = if (state.isCelsius) stringResource(R.string.unit_celsius) else stringResource(R.string.unit_fahrenheit)
+                    val shareLabel = stringResource(R.string.share_weather)
+                    IconButton(
+                        onClick = {
+                            val desc = weather.weather.firstOrNull()?.description?.capitalize() ?: ""
+                            val temp = weather.main.temp
+                            val city = weather.name
+                            val shareText = city + ": " + temp + unitStr + ", " + desc
+                            onShareWeather(shareText)
+                        },
+                        modifier = Modifier.size(32.dp)
                     ) {
-                        Spacer(modifier = Modifier.weight(1f))
-                        val unitStr = if (state.isCelsius) stringResource(R.string.unit_celsius) else stringResource(R.string.unit_fahrenheit)
-                        val shareLabel = stringResource(R.string.share_weather)
-                        IconButton(
-                            onClick = {
-                                val desc = weather.weather.firstOrNull()?.description?.capitalize() ?: ""
-                                val temp = weather.main.temp
-                                val city = weather.name
-                                val shareText = city + ": " + temp + unitStr + ", " + desc
-                                onShareWeather(shareText)
-                            },
-                            modifier = Modifier.size(32.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Share,
-                                contentDescription = shareLabel
+                        Icon(
+                            imageVector = Icons.Default.Share,
+                            contentDescription = shareLabel
+                        )
+                    }
+                }
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(8.dp)
+                        .weight(1f, fill = true),
+                    shape = RoundedCornerShape(16.dp)
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier
+                            .padding(16.dp)
+                            .fillMaxSize()
+                    ) {
+                        Text(
+                            text = weather.name,
+                            style = MaterialTheme.typography.headlineMedium
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+                        weather.weather.firstOrNull()?.let { weatherInfo ->
+                            WeatherIcon(
+                                iconCode = weatherInfo.icon,
+                                modifier = Modifier.size(120.dp),
+                                contentDescription = weatherInfo.description
                             )
                         }
-                    }
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(8.dp)
-                            .weight(1f, fill = true),
-                        shape = RoundedCornerShape(16.dp)
-                    ) {
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            modifier = Modifier
-                                .padding(16.dp)
-                                .fillMaxSize()
+                        Text(
+                            text = "${weather.main.temp}°$unit",
+                            style = MaterialTheme.typography.displayLarge
+                        )
+                        Text(
+                            text = stringResource(R.string.feels_like, weather.main.feels_like, unit),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                        )
+                        Text(
+                            text = stringResource(R.string.min_max, weather.main.temp_min, weather.main.temp_max, unit),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                        )
+                        Text(
+                            text = weather.weather.firstOrNull()?.description?.capitalize() ?: "",
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Row(
+                            horizontalArrangement = Arrangement.SpaceEvenly,
+                            modifier = Modifier.fillMaxWidth()
                         ) {
-                            Text(
-                                text = weather.name,
-                                style = MaterialTheme.typography.headlineMedium
+                            WeatherInfoItem(
+                                icon = Icons.Default.WaterDrop,
+                                value = stringResource(R.string.humidity, weather.main.humidity)
                             )
-                            Spacer(modifier = Modifier.height(12.dp))
-                            weather.weather.firstOrNull()?.let { weatherInfo ->
-                                WeatherIcon(
-                                    iconCode = weatherInfo.icon,
-                                    modifier = Modifier.size(120.dp),
-                                    contentDescription = weatherInfo.description
-                                )
-                            }
-                            Text(
-                                text = "${weather.main.temp}°$unit",
-                                style = MaterialTheme.typography.displayLarge
+                            WeatherInfoItem(
+                                icon = Icons.Default.Air,
+                                value = stringResource(R.string.wind_speed, weather.wind.speed)
                             )
-                            Text(
-                                text = stringResource(R.string.feels_like, weather.main.feels_like, unit),
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                            WeatherInfoItem(
+                                icon = Icons.Default.Speed,
+                                value = stringResource(R.string.pressure, weather.main.pressure)
                             )
-                            Text(
-                                text = stringResource(R.string.min_max, weather.main.temp_min, weather.main.temp_max, unit),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                            WeatherInfoItem(
+                                icon = Icons.Default.Cloud,
+                                value = stringResource(R.string.cloudiness, weather.clouds.all)
                             )
-                            Text(
-                                text = weather.weather.firstOrNull()?.description?.capitalize() ?: "",
-                                style = MaterialTheme.typography.bodyLarge
+                            WeatherInfoItem(
+                                icon = Icons.Default.Visibility,
+                                value = stringResource(R.string.visibility, weather.visibility / 1000.0)
                             )
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Row(
-                                horizontalArrangement = Arrangement.SpaceEvenly,
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                WeatherInfoItem(
-                                    icon = Icons.Default.WaterDrop,
-                                    value = stringResource(R.string.humidity, weather.main.humidity)
-                                )
-                                WeatherInfoItem(
-                                    icon = Icons.Default.Air,
-                                    value = stringResource(R.string.wind_speed, weather.wind.speed)
-                                )
-                                WeatherInfoItem(
-                                    icon = Icons.Default.Speed,
-                                    value = stringResource(R.string.pressure, weather.main.pressure)
-                                )
-                                WeatherInfoItem(
-                                    icon = Icons.Default.Cloud,
-                                    value = stringResource(R.string.cloudiness, weather.clouds.all)
-                                )
-                                WeatherInfoItem(
-                                    icon = Icons.Default.Visibility,
-                                    value = stringResource(R.string.visibility, weather.visibility / 1000.0)
-                                )
-                            }
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Row(
-                                horizontalArrangement = Arrangement.SpaceEvenly,
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                val sunrise = java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault()).format(java.util.Date(weather.sys.sunrise * 1000))
-                                val sunset = java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault()).format(java.util.Date(weather.sys.sunset * 1000))
-                                Text(stringResource(R.string.sunrise, sunrise), style = MaterialTheme.typography.bodySmall)
-                                Text(stringResource(R.string.sunset, sunset), style = MaterialTheme.typography.bodySmall)
-                            }
+                        }
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Row(
+                            horizontalArrangement = Arrangement.SpaceEvenly,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            val sunrise = java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault()).format(java.util.Date(weather.sys.sunrise * 1000))
+                            val sunset = java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault()).format(java.util.Date(weather.sys.sunset * 1000))
+                            Text(stringResource(R.string.sunrise, sunrise), style = MaterialTheme.typography.bodySmall)
+                            Text(stringResource(R.string.sunset, sunset), style = MaterialTheme.typography.bodySmall)
                         }
                     }
                 }
             }
         }
-        AnimatedVisibility(
-            visible = !dailyForecasts.isNullOrEmpty(),
-            enter = fadeIn() + expandVertically(),
-            exit = fadeOut() + shrinkVertically()
-        ) {
-            if (!dailyForecasts.isNullOrEmpty()) {
-                Spacer(modifier = Modifier.height(4.dp))
-                Column(
+        
+        // Показываем прогноз только если он есть
+        if (!dailyForecasts.isNullOrEmpty()) {
+            Log.d("WeatherScreen", "Showing forecast with ${dailyForecasts.size} items")
+            Spacer(modifier = Modifier.height(4.dp))
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f, fill = true),
+                horizontalAlignment = Alignment.Start
+            ) {
+                Text(
+                    text = stringResource(R.string.forecast_title),
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.padding(start = 8.dp, bottom = 4.dp)
+                )
+                Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .weight(1f, fill = true),
-                    horizontalAlignment = Alignment.Start
+                        .fillMaxHeight()
                 ) {
-                    Text(
-                        text = stringResource(R.string.forecast_title),
-                        style = MaterialTheme.typography.titleMedium,
-                        modifier = Modifier.padding(start = 8.dp, bottom = 4.dp)
-                    )
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .fillMaxHeight()
+                    LazyRow(
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        contentPadding = PaddingValues(horizontal = 8.dp),
+                        modifier = Modifier.fillMaxHeight()
                     ) {
-                        LazyRow(
-                            horizontalArrangement = Arrangement.spacedBy(6.dp),
-                            contentPadding = PaddingValues(horizontal = 8.dp),
-                            modifier = Modifier.fillMaxHeight()
-                        ) {
-                            items(dailyForecasts) { item ->
-                                ForecastCard(item, unit)
-                            }
+                        items(dailyForecasts) { item ->
+                            ForecastCard(item, unit)
                         }
                     }
                 }
             }
         }
     }
+    
+    Log.d("WeatherScreen", "WeatherScreen composition completed")
 }
 
 @Composable

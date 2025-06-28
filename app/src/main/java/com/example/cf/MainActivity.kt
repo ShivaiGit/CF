@@ -27,6 +27,8 @@ import android.content.Intent
 import dagger.hilt.android.AndroidEntryPoint
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.activity.viewModels
+import androidx.lifecycle.repeatOnLifecycle
+import androidx.lifecycle.Lifecycle
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -43,10 +45,11 @@ class MainActivity : ComponentActivity() {
         try {
             Log.d("MainActivity", "Initializing components")
 
-            Log.d("MainActivity", "Before setContent")
             setContent {
-                Log.d("MainActivity", "Inside setContent")
+                Log.d("MainActivity", "Starting setContent")
                 val state = viewModel.state.collectAsStateWithLifecycle().value
+                Log.d("MainActivity", "State collected: city=${state.city}, isLoading=${state.isLoading}")
+                
                 CFTheme(darkTheme = state.isDarkTheme) {
                     Surface(
                         modifier = Modifier.fillMaxSize(),
@@ -73,45 +76,63 @@ class MainActivity : ComponentActivity() {
                         }
                     }
                 }
+                Log.d("MainActivity", "setContent completed successfully")
             }
 
-            val fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
-            lifecycleScope.launchWhenStarted {
-                for (event in viewModel.locationEvents) {
-                    when (event) {
-                        is LocationEvent.RequestLocation -> {
-                            if (ActivityCompat.checkSelfPermission(this@MainActivity, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-                                ActivityCompat.requestPermissions(this@MainActivity, arrayOf(Manifest.permission.ACCESS_FINE_LOCATION), 1001)
-                            } else {
-                                val cts = CancellationTokenSource()
-                                fusedLocationClient.getCurrentLocation(com.google.android.gms.location.Priority.PRIORITY_HIGH_ACCURACY, cts.token)
-                                    .addOnSuccessListener { location ->
-                                        if (location != null) {
-                                            lifecycleScope.launch {
-                                                viewModel.onLocationReceived(location.latitude, location.longitude)
-                                            }
-                                        } else {
-                                            lifecycleScope.launch {
-                                                viewModel.onLocationError("Не удалось получить координаты")
-                                            }
-                                        }
-                                    }
-                                    .addOnFailureListener {
-                                        lifecycleScope.launch {
-                                            viewModel.onLocationError("Ошибка получения координат: ${it.message}")
-                                        }
-                                    }
-                            }
-                        }
-                        else -> {}
-                    }
-                }
-            }
+            setupLocationHandling()
 
             Log.d("MainActivity", "Setup completed successfully")
         } catch (e: Exception) {
             Log.e("MainActivity", "Error during initialization", e)
-            // throw e // Не завершаем Activity, только логируем ошибку
+            throw e
+        }
+    }
+
+    private fun setupLocationHandling() {
+        try {
+            Log.d("MainActivity", "Setting up location handling")
+            val fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
+            lifecycleScope.launch {
+                try {
+                    repeatOnLifecycle(Lifecycle.State.STARTED) {
+                        Log.d("MainActivity", "Location lifecycle started")
+                        for (event in viewModel.locationEvents) {
+                            Log.d("MainActivity", "Received location event: $event")
+                            when (event) {
+                                is LocationEvent.RequestLocation -> {
+                                    if (ActivityCompat.checkSelfPermission(this@MainActivity, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                                        ActivityCompat.requestPermissions(this@MainActivity, arrayOf(Manifest.permission.ACCESS_FINE_LOCATION), 1001)
+                                    } else {
+                                        val cts = CancellationTokenSource()
+                                        fusedLocationClient.getCurrentLocation(com.google.android.gms.location.Priority.PRIORITY_HIGH_ACCURACY, cts.token)
+                                            .addOnSuccessListener { location ->
+                                                if (location != null) {
+                                                    lifecycleScope.launch {
+                                                        viewModel.onLocationReceived(location.latitude, location.longitude)
+                                                    }
+                                                } else {
+                                                    lifecycleScope.launch {
+                                                        viewModel.onLocationError("Не удалось получить координаты")
+                                                    }
+                                                }
+                                            }
+                                            .addOnFailureListener {
+                                                lifecycleScope.launch {
+                                                    viewModel.onLocationError("Ошибка получения координат: ${it.message}")
+                                                }
+                                            }
+                                    }
+                                }
+                                else -> {}
+                            }
+                        }
+                    }
+                } catch (e: Exception) {
+                    Log.e("MainActivity", "Error in location handling", e)
+                }
+            }
+        } catch (e: Exception) {
+            Log.e("MainActivity", "Error setting up location handling", e)
         }
     }
 
