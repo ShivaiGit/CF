@@ -32,7 +32,6 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
@@ -149,7 +148,6 @@ fun WeatherScreen(
     Log.d("WeatherScreen", "States collected: city=${state.city}, isLoading=${state.isLoading}, weather=${state.weather != null}")
     
     val unit = if (state.isCelsius) "C" else "F"
-    val configuration = LocalConfiguration.current
 
     // Получаем строки ресурсов в начале функции
     val myLocationText = stringResource(R.string.my_location)
@@ -260,17 +258,19 @@ fun WeatherScreen(
                         containerColor = MaterialTheme.colorScheme.surface
                     )
                 ) {
-                    Column(
+                    Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(12.dp)
+                            .padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         // Поле поиска города с историей
                         AnimatedSearchField(
                             value = state.city,
                             onValueChange = viewModel::onCityChange,
                             onSearch = viewModel::fetchWeather,
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier.weight(1f),
                             enabled = !state.isLoading,
                             placeholderText = placeholderText,
                             clearText = clearText,
@@ -278,73 +278,24 @@ fun WeatherScreen(
                             onHistoryItemClick = { viewModel.selectCityFromHistory(it) }
                         )
                         
-                        Spacer(modifier = Modifier.height(8.dp))
-                        
-                        // Панель с кнопками
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceEvenly,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            // Кнопка "Моё местоположение"
-                            Column(
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                modifier = Modifier.weight(1f)
-                            ) {
-                                AnimatedIconButton(
-                                    onClick = { viewModel.onMyLocationClick() },
-                                    enabled = !state.isLoading,
-                                    modifier = Modifier
-                                        .size(44.dp)
-                                        .background(
-                                            color = MaterialTheme.colorScheme.primaryContainer,
-                                            shape = RoundedCornerShape(12.dp)
-                                        ),
-                                    icon = {
-                                        Icon(
-                                            imageVector = Icons.Default.LocationOn,
-                                            contentDescription = myLocationText,
-                                            tint = MaterialTheme.colorScheme.onPrimaryContainer
-                                        )
-                                    }
-                                )
-                                Spacer(modifier = Modifier.height(2.dp))
-                                Text(
-                                    text = "Моё место",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                        // Кнопка "Моё местоположение"
+                        AnimatedIconButton(
+                            onClick = { viewModel.onMyLocationClick() },
+                            enabled = !state.isLoading,
+                            modifier = Modifier
+                                .size(48.dp)
+                                .background(
+                                    color = MaterialTheme.colorScheme.primaryContainer,
+                                    shape = RoundedCornerShape(12.dp)
+                                ),
+                            icon = {
+                                Icon(
+                                    imageVector = Icons.Default.LocationOn,
+                                    contentDescription = myLocationText,
+                                    tint = MaterialTheme.colorScheme.onPrimaryContainer
                                 )
                             }
-                            
-                            // Кнопка "Настройки"
-                            Column(
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                modifier = Modifier.weight(1f)
-                            ) {
-                                AnimatedIconButton(
-                                    onClick = onSettingsClick,
-                                    modifier = Modifier
-                                        .size(44.dp)
-                                        .background(
-                                            color = MaterialTheme.colorScheme.secondaryContainer,
-                                            shape = RoundedCornerShape(12.dp)
-                                        ),
-                                    icon = {
-                                        Icon(
-                                            imageVector = Icons.Default.Settings, 
-                                            contentDescription = settingsText,
-                                            tint = MaterialTheme.colorScheme.onSecondaryContainer
-                                        )
-                                    }
-                                )
-                                Spacer(modifier = Modifier.height(2.dp))
-                                Text(
-                                    text = "Настройки",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-                                )
-                            }
-                        }
+                        )
                     }
                 }
             }
@@ -424,6 +375,30 @@ fun WeatherScreen(
             backgroundColor = MaterialTheme.colorScheme.surface,
             contentColor = MaterialTheme.colorScheme.primary
         )
+        
+        // Кнопка настроек в правом нижнем углу
+        Box(
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(16.dp)
+        ) {
+            FloatingActionButton(
+                onClick = onSettingsClick,
+                modifier = Modifier.size(56.dp),
+                containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                elevation = FloatingActionButtonDefaults.elevation(
+                    defaultElevation = 6.dp,
+                    pressedElevation = 8.dp
+                )
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Settings,
+                    contentDescription = settingsText,
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+        }
     }
     
     Log.d("WeatherScreen", "WeatherScreen composition completed")
@@ -714,7 +689,10 @@ fun ForecastSection(
         Text(
             text = forecastTitleText,
             style = MaterialTheme.typography.titleMedium,
-            modifier = Modifier.padding(bottom = 8.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 8.dp),
+            textAlign = TextAlign.Center,
             color = MaterialTheme.colorScheme.onSurface
         )
         
