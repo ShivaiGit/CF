@@ -166,6 +166,10 @@ class WeatherPreferences(private val context: Context) {
         }
     }
 
+    suspend fun saveUnitCelsius(isCelsius: Boolean) {
+        saveUnit(isCelsius)
+    }
+
     val historyCities: Flow<List<String>> = context.dataStore.data
         .catch { exception ->
             Log.e("WeatherPreferences", "Error reading history cities", exception)
@@ -199,6 +203,16 @@ class WeatherPreferences(private val context: Context) {
         current.add(0, city)
         val trimmed = current.take(5)
         saveHistoryCities(trimmed)
+    }
+
+    suspend fun removeCityFromHistory(city: String) {
+        val current = historyCities.first().toMutableList()
+        current.removeAll { it.equals(city, ignoreCase = true) }
+        saveHistoryCities(current)
+    }
+
+    suspend fun clearHistory() {
+        saveHistoryCities(emptyList())
     }
 
     suspend fun clearHistoryCities() {

@@ -10,14 +10,14 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
-import retrofit2.HttpException
-import java.io.IOException
 import com.google.gson.Gson
 import com.google.gson.JsonSyntaxException
 import com.example.cf.data.WeatherResponse
 import com.example.cf.data.ForecastResponse
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import com.example.cf.core.Result
+import com.example.cf.core.ErrorHandler
 
 sealed class LocationEvent {
     object RequestLocation : LocationEvent()
@@ -75,7 +75,7 @@ class WeatherViewModel @Inject constructor(
     }
 
     fun onCityChange(newCity: String) {
-        _state.update { it.copy(city = newCity, error = null) }
+        _state.update { it.copy(city = newCity) }
     }
 
     private fun clearSavedCity() {
@@ -83,7 +83,7 @@ class WeatherViewModel @Inject constructor(
             try {
                 Log.d("WeatherViewModel", "Clearing saved city")
                 preferences.saveCity("")
-                _state.update { it.copy(city = "", weather = null, forecast = null) }
+                _state.update { it.copy(city = "", weatherResult = Result.Loading, forecastResult = Result.Loading) }
             } catch (e: Exception) {
                 Log.e("WeatherViewModel", "Error clearing saved city", e)
             }
@@ -101,7 +101,12 @@ class WeatherViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 Log.d("WeatherViewModel", "Starting weather fetch for city: $cityToFetch")
-                _state.update { it.copy(isLoading = true, error = null) }
+                _state.update { 
+                    it.copy(
+                        weatherResult = Result.Loading,
+                        forecastResult = Result.Loading
+                    ) 
+                }
 
                 // Параллельно загружаем текущую погоду и прогноз
                 val currentDeferred = async { repository.getCurrentWeather(cityToFetch, units) }
@@ -129,20 +134,22 @@ class WeatherViewModel @Inject constructor(
 
                 _state.update { 
                     it.copy(
-                        isLoading = false,
-                        weather = current,
-                        forecast = forecast,
-                        error = null
+                        weatherResult = Result.Success(current),
+                        forecastResult = Result.Success(forecast)
                     )
                 }
                 _isCacheShown.value = false
+            
             } catch (e: Exception) {
                 Log.e("WeatherViewModel", "Error fetching weather for $cityToFetch", e)
+                val errorMessage = ErrorHandler.handleException(e)
+                
                 // Если это автозагрузка и возникла ошибка - очищаем сохранённый город
                 if (isAutoLoad) {
                     Log.d("WeatherViewModel", "Auto-load failed, clearing saved city")
                     clearSavedCity()
                 }
+                
                 // --- Пробуем загрузить кэш ---
                 var cacheUsed = false
                 try {
@@ -154,10 +161,8 @@ class WeatherViewModel @Inject constructor(
                         val cachedForecast = gson.fromJson(cachedForecastJson, ForecastResponse::class.java)
                         _state.update {
                             it.copy(
-                                isLoading = false,
-                                weather = cachedWeather,
-                                forecast = cachedForecast,
-                                error = errorMessage(e)
+                                weatherResult = Result.Success(cachedWeather),
+                                forecastResult = Result.Success(cachedForecast)
                             )
                         }
                         _isCacheShown.value = true
@@ -167,31 +172,18 @@ class WeatherViewModel @Inject constructor(
                 } catch (ex: Exception) {
                     Log.e("WeatherViewModel", "Error loading cache", ex)
                 }
+                
                 if (!cacheUsed) {
                     _state.update { 
                         it.copy(
-                            isLoading = false,
-                            error = errorMessage(e)
+                            weatherResult = Result.Error(e),
+                            forecastResult = Result.Error(e)
                         )
                     }
                     _isCacheShown.value = false
                 }
             }
         }
-    }
-
-    private fun errorMessage(e: Exception): String {
-        val message = when (e) {
-            is IOException -> "Нет подключения к интернету. Проверьте сеть."
-            is HttpException -> when (e.code()) {
-                404 -> "Город не найден. Проверьте название."
-                401 -> "Ошибка авторизации. Проверьте API ключ."
-                else -> "Ошибка сервера: ${e.code()}"
-            }
-            else -> e.message ?: "Неизвестная ошибка. Попробуйте позже."
-        }
-        Log.d("WeatherViewModel", "Error message: $message")
-        return message
     }
 
     fun toggleTheme() {
@@ -228,27 +220,31 @@ class WeatherViewModel @Inject constructor(
         val units = if (_state.value.isCelsius) "metric" else "imperial"
         viewModelScope.launch {
             try {
-                _state.update { it.copy(isLoading = true, error = null) }
+                _state.update { 
+                    it.copy(
+                        weatherResult = Result.Loading,
+                        forecastResult = Result.Loading
+                    ) 
+                }
                 val currentDeferred = async { repository.getCurrentWeatherByCoords(lat, lon, units) }
                 val forecastDeferred = async { repository.getForecastByCoords(lat, lon, units) }
                 val current = currentDeferred.await()
                 val forecast = forecastDeferred.await()
                 _state.update {
                     it.copy(
-                        isLoading = false,
-                        weather = current,
-                        forecast = forecast,
-                        error = null,
+                        weatherResult = Result.Success(current),
+                        forecastResult = Result.Success(forecast),
                         city = current.name
                     )
                 }
                 preferences.saveCity(current.name)
             } catch (e: Exception) {
                 Log.e("WeatherViewModel", "Error fetching weather by location", e)
+                val errorMessage = ErrorHandler.handleException(e)
                 _state.update {
                     it.copy(
-                        isLoading = false,
-                        error = errorMessage(e)
+                        weatherResult = Result.Error(e),
+                        forecastResult = Result.Error(e)
                     )
                 }
             }
@@ -257,7 +253,12 @@ class WeatherViewModel @Inject constructor(
 
     fun onLocationError(message: String) {
         viewModelScope.launch {
-            _state.update { it.copy(error = message, isLoading = false) }
+            _state.update { 
+                it.copy(
+                    weatherResult = Result.Error(Exception(message)),
+                    forecastResult = Result.Error(Exception(message))
+                ) 
+            }
         }
     }
 
@@ -265,23 +266,40 @@ class WeatherViewModel @Inject constructor(
         _state.update { it.copy(isCelsius = isCelsius) }
         viewModelScope.launch {
             try {
-                preferences.saveUnit(isCelsius)
-                // Перезапрашиваем погоду с новыми units
-                fetchWeather()
+                preferences.saveUnitCelsius(isCelsius)
+                // Перезагружаем погоду с новыми единицами измерения
+                if (_state.value.city.isNotBlank()) {
+                    fetchWeather()
+                }
             } catch (e: Exception) {
                 Log.e("WeatherViewModel", "Error saving unit", e)
             }
         }
     }
 
-    fun selectCityFromHistory(city: String) {
-        _state.update { it.copy(city = city, error = null) }
-        fetchWeather()
-    }
-
     fun clearHistory() {
         viewModelScope.launch {
-            preferences.clearHistoryCities()
+            try {
+                preferences.clearHistory()
+                _historyCities.value = emptyList()
+            } catch (e: Exception) {
+                Log.e("WeatherViewModel", "Error clearing history", e)
+            }
         }
+    }
+
+    fun removeFromHistory(city: String) {
+        viewModelScope.launch {
+            try {
+                preferences.removeCityFromHistory(city)
+            } catch (e: Exception) {
+                Log.e("WeatherViewModel", "Error removing city from history", e)
+            }
+        }
+    }
+
+    fun selectCityFromHistory(city: String) {
+        _state.update { it.copy(city = city) }
+        fetchWeather()
     }
 } 
