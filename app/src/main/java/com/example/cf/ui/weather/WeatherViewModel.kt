@@ -273,6 +273,18 @@ class WeatherViewModel @Inject constructor(
         fetchWeather()
     }
 
+    fun clearHistory() {
+        Log.d("WeatherViewModel", "Clearing search history")
+        viewModelScope.launch {
+            try {
+                preferences.clearHistory()
+                Log.d("WeatherViewModel", "Search history cleared successfully")
+            } catch (e: Exception) {
+                Log.e("WeatherViewModel", "Error clearing search history", e)
+            }
+        }
+    }
+
     fun toggleTemperatureUnit() {
         val currentState = _state.value
         val newIsCelsius = !currentState.isCelsius

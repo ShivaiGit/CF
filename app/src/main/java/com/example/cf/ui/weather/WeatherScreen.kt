@@ -296,7 +296,8 @@ fun WeatherScreen(
                             placeholderText = placeholder,
                             clearText = clear,
                             historyCities = historyCities,
-                            onHistoryItemClick = { viewModel.selectCityFromHistory(it) }
+                            onHistoryItemClick = { viewModel.selectCityFromHistory(it) },
+                            onClearHistory = { viewModel.clearHistory() }
                         )
                         
                         // Кнопка "Моё местоположение"
@@ -795,7 +796,8 @@ fun AnimatedSearchField(
     placeholderText: String,
     clearText: String,
     historyCities: List<String>,
-    onHistoryItemClick: (String) -> Unit
+    onHistoryItemClick: (String) -> Unit,
+    onClearHistory: () -> Unit
 ) {
     var isExpanded by remember { mutableStateOf(false) }
     var showHistory by remember { mutableStateOf(false) }
@@ -812,7 +814,7 @@ fun AnimatedSearchField(
         label = "scale"
     )
 
-    Box(modifier = modifier) {
+    Column(modifier = modifier) {
         OutlinedTextField(
             value = value,
             onValueChange = onValueChange,
@@ -863,7 +865,7 @@ fun AnimatedSearchField(
             singleLine = true
         )
         
-        // История поиска
+        // История поиска - теперь под полем ввода
         AnimatedVisibility(
             visible = showHistory,
             enter = fadeIn() + expandVertically(),
@@ -882,6 +884,46 @@ fun AnimatedSearchField(
                 Column(
                     modifier = Modifier.padding(8.dp)
                 ) {
+                    // Заголовок истории с кнопкой очистки
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 8.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "История поиска",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontWeight = androidx.compose.ui.text.font.FontWeight.Medium
+                        )
+                        
+                        if (historyCities.isNotEmpty()) {
+                            TextButton(
+                                onClick = {
+                                    onClearHistory()
+                                    showHistory = false
+                                },
+                                colors = ButtonDefaults.textButtonColors(
+                                    contentColor = MaterialTheme.colorScheme.error
+                                )
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.DeleteSweep,
+                                    contentDescription = "Очистить историю",
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = "Очистить",
+                                    style = MaterialTheme.typography.labelSmall
+                                )
+                            }
+                        }
+                    }
+                    
+                    // Список городов из истории
                     historyCities.take(5).forEach { city ->
                         Row(
                             modifier = Modifier
@@ -905,6 +947,15 @@ fun AnimatedSearchField(
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurface,
                                 modifier = Modifier.weight(1f)
+                            )
+                        }
+                        
+                        // Разделитель между элементами (кроме последнего)
+                        if (city != historyCities.take(5).last()) {
+                            Divider(
+                                modifier = Modifier.padding(horizontal = 12.dp),
+                                color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
+                                thickness = 0.5.dp
                             )
                         }
                     }
